@@ -792,6 +792,11 @@ compile_agent() {
     fi
 
     if [[ "$DRY_RUN" == "true" ]]; then
+        # Show diff if file exists
+        if [[ -f "$dest_file" ]]; then
+            local old_content=$(cat "$dest_file")
+            show_diff_preview "$old_content" "$content" "$dest_file"
+        fi
         echo "$dest_file"
     else
         ensure_dir "$(dirname "$dest_file")"

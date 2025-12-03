@@ -89,3 +89,69 @@ print_verbose() {
         echo "[VERBOSE] $1" >&2
     fi
 }
+
+# -----------------------------------------------------------------------------
+# Diff Preview
+# -----------------------------------------------------------------------------
+
+# Show colored diff preview of file changes
+# Usage: show_diff_preview "old_content" "new_content" "file_path"
+show_diff_preview() {
+    local old_content=$1
+    local new_content=$2
+    local file_path=$3
+
+    # Create temp files for diff
+    local temp_old=$(mktemp)
+    local temp_new=$(mktemp)
+    echo "$old_content" > "$temp_old"
+    echo "$new_content" > "$temp_new"
+
+    # Generate unified diff
+    local diff_output=$(diff -u "$temp_old" "$temp_new" 2>/dev/null || true)
+
+    # Clean up temp files
+    rm -f "$temp_old" "$temp_new"
+
+    # If no diff, skip
+    if [[ -z "$diff_output" ]]; then
+        return
+    fi
+
+    # Count changes
+    local added=$(echo "$diff_output" | grep -c "^+" || true)
+    local removed=$(echo "$diff_output" | grep -c "^-" || true)
+    # Subtract header lines (---, +++)
+    ((added = added > 0 ? added - 1 : 0)) || true
+    ((removed = removed > 0 ? removed - 1 : 0)) || true
+
+    # Show file header
+    echo ""
+    print_color "$PURPLE" "━━━ Changes to: $file_path ━━━"
+    echo -e "${GREEN}+$added${NC} ${RED}-$removed${NC} lines"
+    echo ""
+
+    # Color-code and print diff
+    echo "$diff_output" | while IFS= read -r line; do
+        if [[ "$line" =~ ^--- ]]; then
+            # Old file header - don't print (temp file path)
+            continue
+        elif [[ "$line" =~ ^\+\+\+ ]]; then
+            # New file header - don't print (temp file path)
+            continue
+        elif [[ "$line" =~ ^@@ ]]; then
+            # Chunk header
+            print_color "$BLUE" "$line"
+        elif [[ "$line" =~ ^\+ ]]; then
+            # Addition
+            print_color "$GREEN" "$line"
+        elif [[ "$line" =~ ^- ]]; then
+            # Deletion
+            print_color "$RED" "$line"
+        else
+            # Context line
+            echo "$line"
+        fi
+    done
+    echo ""
+}

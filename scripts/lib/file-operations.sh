@@ -35,6 +35,12 @@ copy_file() {
     local dest=$2
 
     if [[ "$DRY_RUN" == "true" ]]; then
+        # Show diff if destination exists
+        if [[ -f "$dest" ]]; then
+            local old_content=$(cat "$dest")
+            local new_content=$(cat "$source")
+            show_diff_preview "$old_content" "$new_content" "$dest"
+        fi
         echo "$dest"
     else
         ensure_dir "$(dirname "$dest")"
@@ -50,6 +56,11 @@ write_file() {
     local dest=$2
 
     if [[ "$DRY_RUN" == "true" ]]; then
+        # Show diff if destination exists
+        if [[ -f "$dest" ]]; then
+            local old_content=$(cat "$dest")
+            show_diff_preview "$old_content" "$content" "$dest"
+        fi
         echo "$dest"
     else
         ensure_dir "$(dirname "$dest")"

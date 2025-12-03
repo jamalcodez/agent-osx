@@ -39,6 +39,7 @@ scripts/
 - `print_error_with_context()` - Errors with context and fix instructions
 - `print_error_with_remedy()` - Errors with fix instructions only
 - `print_verbose()` - Verbose mode output
+- `show_diff_preview()` - Display colored unified diff (dry-run mode)
 
 **Dependencies**: None (defines color constants)
 
@@ -47,6 +48,11 @@ scripts/
 source "scripts/lib/output.sh"
 print_success "Operation completed"
 print_error_with_context "File not found" "Path: /tmp/file" "Create the file first"
+
+# Show diff preview in dry-run mode
+old_content=$(cat existing_file.txt)
+new_content="New content here"
+show_diff_preview "$old_content" "$new_content" "existing_file.txt"
 ```
 
 ### yaml-parser.sh
