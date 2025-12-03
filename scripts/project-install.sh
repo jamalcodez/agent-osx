@@ -21,6 +21,7 @@ source "$SCRIPT_DIR/common-functions.sh"
 
 DRY_RUN="false"
 VERBOSE="false"
+USE_CACHE="true"
 PRESET=""
 PROFILE=""
 CLAUDE_CODE_COMMANDS=""
@@ -59,6 +60,7 @@ Options:
     --overwrite-commands                     Overwrite existing commands during update
     --overwrite-agents                       Overwrite existing agents during update
     --dry-run                                Show what would be done without doing it
+    --no-cache                               Disable compilation caching
     --verbose                                Show detailed output
     -h, --help                               Show this help message
 
@@ -132,6 +134,10 @@ parse_arguments() {
                 ;;
             --dry-run)
                 DRY_RUN="true"
+                shift
+                ;;
+            --no-cache)
+                USE_CACHE="false"
                 shift
                 ;;
             --verbose)

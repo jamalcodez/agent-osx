@@ -34,6 +34,9 @@ source "$COMMON_FUNCTIONS_DIR/lib/yaml-parser.sh"
 # Source file operation functions
 source "$COMMON_FUNCTIONS_DIR/lib/file-operations.sh"
 
+# Source caching functions
+source "$COMMON_FUNCTIONS_DIR/lib/cache.sh"
+
 # -----------------------------------------------------------------------------
 # Global Variables (set by scripts that source this file)
 # -----------------------------------------------------------------------------
@@ -657,6 +660,33 @@ compile_agent() {
     local role_data=$5
     local phase_mode=${6:-""}  # Optional: "embed" to embed PHASE content, or empty for no processing
 
+    # Check cache (unless --no-cache flag is set or role_data is provided)
+    # Role data bypasses cache because it's dynamic content
+    if [[ "${USE_CACHE:-true}" == "true" ]] && [[ -z "$role_data" ]]; then
+        local cache_key=$(generate_cache_key "$source_file" "$profile" "$phase_mode" \
+            "${EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS:-true}" \
+            "${EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS:-true}")
+
+        if [[ -n "$cache_key" ]]; then
+            local cached_content=""
+            if get_from_cache "$cache_key" cached_content; then
+                # Cache hit - use cached content
+                if [[ "$DRY_RUN" == "true" ]]; then
+                    if [[ -f "$dest_file" ]]; then
+                        local old_content=$(cat "$dest_file")
+                        show_diff_preview "$old_content" "$cached_content" "$dest_file"
+                    fi
+                    echo "$dest_file"
+                else
+                    ensure_dir "$(dirname "$dest_file")"
+                    echo "$cached_content" > "$dest_file"
+                    print_verbose "Used cached compilation: $dest_file"
+                fi
+                return
+            fi
+        fi
+    fi
+
     local content=$(cat "$source_file")
 
     # Process role replacements if provided
@@ -789,6 +819,16 @@ compile_agent() {
         local new_tools_line=$(replace_playwright_tools "$tools_line")
         # Simple replacement since this is a single line
         content=$(echo "$content" | sed "s|^tools:.*$|$new_tools_line|")
+    fi
+
+    # Store in cache (unless --no-cache flag is set or role_data was provided)
+    if [[ "${USE_CACHE:-true}" == "true" ]] && [[ -z "$role_data" ]]; then
+        local cache_key=$(generate_cache_key "$source_file" "$profile" "$phase_mode" \
+            "${EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS:-true}" \
+            "${EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS:-true}")
+        if [[ -n "$cache_key" ]]; then
+            put_in_cache "$cache_key" "$content" "$source_file"
+        fi
     fi
 
     if [[ "$DRY_RUN" == "true" ]]; then

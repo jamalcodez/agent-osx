@@ -96,12 +96,62 @@ ensure_dir "/tmp/test"
 copy_file "source.txt" "/tmp/test/dest.txt"
 ```
 
+### cache.sh
+**Purpose**: Content-based caching for template compilation
+
+**Functions**:
+- `init_cache()` - Initialize cache directory and version check
+- `generate_cache_key()` - Create MD5 hash from compilation inputs
+- `get_from_cache()` - Retrieve cached compiled content
+- `put_in_cache()` - Store compiled content with metadata
+- `clear_cache()` - Clear entire cache
+- `clear_cache_for_profile()` - Clear cache for specific profile
+- `get_cache_stats()` - Show cache size and entry count
+
+**Dependencies**:
+- Uses `print_verbose()` from output.sh (must be sourced first)
+- Requires `$USE_CACHE` global variable
+- Cache stored in `$HOME/.cache/agent-os/compilation/`
+
+**Usage**:
+```bash
+source "scripts/lib/output.sh"
+source "scripts/lib/cache.sh"
+USE_CACHE="true"
+VERBOSE="true"
+
+# Generate cache key from compilation inputs
+cache_key=$(generate_cache_key "source.md" "default" "" "true" "true")
+
+# Check cache
+cached_content=""
+if get_from_cache "$cache_key" cached_content; then
+    echo "Cache hit: $cached_content"
+else
+    # Compile and cache
+    compiled="<compiled content>"
+    put_in_cache "$cache_key" "$compiled" "source.md"
+fi
+
+# View cache statistics
+get_cache_stats
+```
+
+**Cache Key Factors**:
+- Source file content (MD5 hash)
+- Profile name
+- Phase mode (embed vs normal)
+- Claude Code subagents flag
+- Standards as Skills flag
+- Agent OS version
+
 ## Migration Status
 
 ### ✅ Completed Modules
 - **output.sh**: All output functions extracted and tested
 - **yaml-parser.sh**: All YAML functions extracted and tested
 - **file-operations.sh**: Core file operations extracted and tested
+- **cache.sh**: Compilation caching system implemented and tested
 
 ### ⏳ Planned Modules
 - **validator.sh**: Configuration validation logic
@@ -115,12 +165,13 @@ copy_file "source.txt" "/tmp/test/dest.txt"
 | Output functions | ~90 | ✅ Complete | output.sh |
 | YAML parsing | ~140 | ✅ Complete | yaml-parser.sh |
 | File operations | ~90 | ✅ Complete | file-operations.sh |
+| Caching system | ~180 | ✅ Complete | cache.sh |
 | Profile management | ~200 | ⏳ Pending | profile-manager.sh |
 | Validation | ~150 | ⏳ Pending | validator.sh |
 | Template compilation | ~600 | ⏳ Pending | compiler.sh |
 | Other utilities | ~200 | ⏳ Pending | TBD |
 
-**Total**: ~320 lines migrated out of ~1,468 lines (~22% complete)
+**Total**: ~500 lines migrated out of ~1,468 lines (~34% complete)
 
 ## Usage in Scripts
 

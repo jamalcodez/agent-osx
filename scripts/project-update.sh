@@ -21,6 +21,7 @@ source "$SCRIPT_DIR/common-functions.sh"
 
 DRY_RUN="false"
 VERBOSE="false"
+USE_CACHE="true"
 PROFILE=""
 CLAUDE_CODE_COMMANDS=""
 USE_CLAUDE_CODE_SUBAGENTS=""
@@ -57,6 +58,7 @@ Options:
     --overwrite-commands                     Overwrite existing command files
     --overwrite-standards                    Overwrite existing standards files
     --dry-run                                Show what would be done without doing it
+    --no-cache                               Disable compilation caching
     --verbose                                Show detailed output
     -h, --help                               Show this help message
 
@@ -124,6 +126,10 @@ parse_arguments() {
                 ;;
             --dry-run)
                 DRY_RUN="true"
+                shift
+                ;;
+            --no-cache)
+                USE_CACHE="false"
                 shift
                 ;;
             --verbose)
