@@ -37,6 +37,9 @@ source "$COMMON_FUNCTIONS_DIR/lib/file-operations.sh"
 # Source caching functions
 source "$COMMON_FUNCTIONS_DIR/lib/cache.sh"
 
+# Source validation functions
+source "$COMMON_FUNCTIONS_DIR/lib/validator.sh"
+
 # -----------------------------------------------------------------------------
 # Global Variables (set by scripts that source this file)
 # -----------------------------------------------------------------------------

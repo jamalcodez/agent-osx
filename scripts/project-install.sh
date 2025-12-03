@@ -658,6 +658,13 @@ main() {
     # Load configuration
     load_configuration
 
+    # Run pre-flight validation (unless dry-run, which validates anyway)
+    if ! run_preflight_validation "$EFFECTIVE_PROFILE" "$BASE_DIR" "$PRESET" \
+        "$EFFECTIVE_CLAUDE_CODE_COMMANDS" "$EFFECTIVE_USE_CLAUDE_CODE_SUBAGENTS" \
+        "$EFFECTIVE_AGENT_OS_COMMANDS" "$EFFECTIVE_STANDARDS_AS_CLAUDE_CODE_SKILLS"; then
+        exit 1
+    fi
+
     # Check if Agent OS is already installed
     if is_agent_os_installed "$PROJECT_DIR"; then
         if [[ "$RE_INSTALL" == "true" ]]; then

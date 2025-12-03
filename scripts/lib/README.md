@@ -157,6 +157,45 @@ get_cache_stats
 - Standards as Skills flag
 - Agent OS version
 
+### validator.sh
+**Purpose**: Pre-flight validation and configuration checking
+
+**Functions**:
+- `command_exists()` - Check if command is available
+- `check_system_dependencies()` - Validate required system commands
+- `validate_profile_structure()` - Check profile directory structure
+- `validate_preset_name()` - Validate preset against known presets
+- `validate_config_logic()` - Check configuration dependencies
+- `run_preflight_validation()` - Master validation orchestrator
+
+**Dependencies**:
+- Uses `print_*()` functions from output.sh (must be sourced first)
+
+**Usage**:
+```bash
+source "scripts/lib/output.sh"
+source "scripts/lib/validator.sh"
+
+# Run comprehensive pre-flight validation
+if ! run_preflight_validation "$profile" "$base_dir" "$preset" \
+    "$claude_code_commands" "$use_claude_code_subagents" \
+    "$agent_os_commands" "$standards_as_claude_code_skills"; then
+    echo "Validation failed - fix issues and try again"
+    exit 1
+fi
+
+# Individual validation checks
+check_system_dependencies           # Check perl, md5sum, etc.
+validate_preset_name "cursor"       # Validate preset name
+validate_profile_structure "default" "$BASE_DIR"  # Check profile structure
+```
+
+**Validation Checks**:
+1. **System Dependencies**: perl, md5sum (with install hints)
+2. **Profile Structure**: Required directories (standards, commands, agents, workflows)
+3. **Preset Names**: Against known preset list
+4. **Config Logic**: Dependency checks (subagents requires commands, etc.)
+
 ## Migration Status
 
 ### ✅ Completed Modules
@@ -164,9 +203,9 @@ get_cache_stats
 - **yaml-parser.sh**: All YAML functions extracted and tested
 - **file-operations.sh**: Core file operations extracted and tested
 - **cache.sh**: Compilation caching system implemented and tested
+- **validator.sh**: Pre-flight validation system implemented and tested
 
 ### ⏳ Planned Modules
-- **validator.sh**: Configuration validation logic
 - **profile-manager.sh**: Profile resolution and inheritance
 - **compiler.sh**: Template compilation (workflows, standards, conditionals)
 
@@ -178,12 +217,12 @@ get_cache_stats
 | YAML parsing | ~140 | ✅ Complete | yaml-parser.sh |
 | File operations | ~90 | ✅ Complete | file-operations.sh |
 | Caching system | ~180 | ✅ Complete | cache.sh |
+| Validation | ~200 | ✅ Complete | validator.sh |
 | Profile management | ~200 | ⏳ Pending | profile-manager.sh |
-| Validation | ~150 | ⏳ Pending | validator.sh |
 | Template compilation | ~600 | ⏳ Pending | compiler.sh |
 | Other utilities | ~200 | ⏳ Pending | TBD |
 
-**Total**: ~500 lines migrated out of ~1,468 lines (~34% complete)
+**Total**: ~700 lines migrated out of ~1,468 lines (~48% complete)
 
 ## Usage in Scripts
 
