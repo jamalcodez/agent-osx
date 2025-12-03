@@ -151,9 +151,12 @@ validate_installations() {
 
     # Check project installation
     if [[ ! -f "$PROJECT_DIR/agent-os/config.yml" ]]; then
-        print_error "Agent OS not installed in this project"
         echo ""
-        print_status "Please run project-install.sh first"
+        print_error_with_context \
+            "Agent OS not installed in this project" \
+            "Expected config file: $PROJECT_DIR/agent-os/config.yml" \
+            "Run project-install.sh first: ~/agent-os/scripts/project-install.sh"
+        echo ""
         exit 1
     fi
 

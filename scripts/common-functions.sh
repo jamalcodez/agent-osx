@@ -57,6 +57,30 @@ print_error() {
     print_color "$RED" "✗ $1"
 }
 
+# Print error message with context and remedy
+# Usage: print_error_with_context "error message" "context details" "how to fix"
+print_error_with_context() {
+    local error=$1
+    local context=$2
+    local remedy=$3
+
+    print_color "$RED" "✗ ERROR: $error"
+    if [[ -n "$context" ]]; then
+        echo -e "  ${BLUE}Context:${NC} $context"
+    fi
+    if [[ -n "$remedy" ]]; then
+        echo -e "  ${GREEN}Fix:${NC} $remedy"
+    fi
+}
+
+# Print error with just a remedy (convenience function)
+# Usage: print_error_with_remedy "error message" "how to fix"
+print_error_with_remedy() {
+    local error=$1
+    local remedy=$2
+    print_error_with_context "$error" "" "$remedy"
+}
+
 # Print verbose message (only in verbose mode)
 print_verbose() {
     if [[ "$VERBOSE" == "true" ]]; then
@@ -1119,16 +1143,22 @@ get_project_config() {
 # Validate base installation exists
 validate_base_installation() {
     if [[ ! -d "$BASE_DIR" ]]; then
-        print_error "Agent OS base installation not found at ~/agent-os/"
         echo ""
-        print_status "Please run the base installation first:"
-        echo "  curl -sSL https://raw.githubusercontent.com/buildermethods/agent-os/main/scripts/base-install.sh | bash"
+        print_error_with_context \
+            "Agent OS base installation not found" \
+            "Expected location: $BASE_DIR" \
+            "Run base installation: curl -sSL https://raw.githubusercontent.com/buildermethods/agent-os/main/scripts/base-install.sh | bash"
         echo ""
         exit 1
     fi
 
     if [[ ! -f "$BASE_DIR/config.yml" ]]; then
-        print_error "Base installation config.yml not found"
+        echo ""
+        print_error_with_context \
+            "Base installation config.yml not found" \
+            "Expected location: $BASE_DIR/config.yml" \
+            "Your base installation may be corrupted. Try running base-install.sh again."
+        echo ""
         exit 1
     fi
 
@@ -1140,16 +1170,10 @@ check_not_base_installation() {
     if [[ -f "$PROJECT_DIR/agent-os/config.yml" ]]; then
         if grep -q "base_install: true" "$PROJECT_DIR/agent-os/config.yml"; then
             echo ""
-            print_error "Cannot install Agent OS in base installation directory"
-            echo ""
-            echo "It appears you are in the location of your Agent OS base installation (your home directory)."
-            echo "To install Agent OS in a project, move to your project's root folder:"
-            echo ""
-            echo "  cd path/to/project"
-            echo ""
-            echo "And then run:"
-            echo ""
-            echo "  ~/agent-os/scripts/project-install.sh"
+            print_error_with_context \
+                "Cannot install Agent OS in base installation directory" \
+                "You are currently in: $PROJECT_DIR (appears to be base installation)" \
+                "Navigate to your project directory: cd /path/to/your/project && ~/agent-os/scripts/project-install.sh"
             echo ""
             exit 1
         fi
@@ -1219,7 +1243,12 @@ validate_config() {
 
     # Validate at least one output is enabled
     if [[ "$claude_code_commands" != "true" ]] && [[ "$agent_os_commands" != "true" ]]; then
-        print_error "At least one of 'claude_code_commands' or 'agent_os_commands' must be true"
+        echo ""
+        print_error_with_context \
+            "Invalid configuration: No output target enabled" \
+            "Both 'claude_code_commands' and 'agent_os_commands' are set to false" \
+            "Edit $BASE_DIR/config.yml and set at least one to 'true'"
+        echo ""
         exit 1
     fi
 
@@ -1243,7 +1272,22 @@ validate_config() {
 
     # Validate profile exists
     if [[ ! -d "$BASE_DIR/profiles/$profile" ]]; then
-        print_error "Profile not found: $profile"
+        echo ""
+        print_error_with_context \
+            "Profile '$profile' not found" \
+            "Expected location: $BASE_DIR/profiles/$profile/" \
+            "Run './scripts/create-profile.sh' to create it, or check 'profile' setting in $BASE_DIR/config.yml"
+        echo ""
+        # List available profiles to help user
+        if [[ -d "$BASE_DIR/profiles" ]]; then
+            echo "  Available profiles:"
+            for dir in "$BASE_DIR/profiles"/*/ ; do
+                if [[ -d "$dir" ]]; then
+                    basename "$dir"
+                fi
+            done | sed 's/^/    - /'
+            echo ""
+        fi
         exit 1
     fi
 }
