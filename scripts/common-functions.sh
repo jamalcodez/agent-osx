@@ -4,14 +4,35 @@
 # Agent OS Common Functions
 # Shared utilities for Agent OS scripts
 # =============================================================================
+#
+# ARCHITECTURE: This file is transitioning to a modular structure.
+# Core utilities are being extracted into focused modules in scripts/lib/
+#
+# Modules (new, maintained):
+#   - lib/output.sh          - Color printing and user-facing output
+#   - lib/yaml-parser.sh     - YAML parsing and string normalization
+#   - lib/file-operations.sh - File manipulation with dry-run support
+#
+# Legacy functions (below) will be progressively migrated to modules.
+# All existing scripts remain fully compatible during transition.
+#
+# =============================================================================
 
-# Colors for output
-RED='\033[38;2;255;32;86m'
-GREEN='\033[38;2;0;234;179m'
-YELLOW='\033[38;2;255;185;0m'
-BLUE='\033[38;2;0;208;255m'
-PURPLE='\033[38;2;142;81;255m'
-NC='\033[0m' # No Color
+# Get the directory where this file is located
+COMMON_FUNCTIONS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# -----------------------------------------------------------------------------
+# Load Modular Components
+# -----------------------------------------------------------------------------
+
+# Source output functions (colors, printing, errors)
+source "$COMMON_FUNCTIONS_DIR/lib/output.sh"
+
+# Source YAML parsing functions
+source "$COMMON_FUNCTIONS_DIR/lib/yaml-parser.sh"
+
+# Source file operation functions
+source "$COMMON_FUNCTIONS_DIR/lib/file-operations.sh"
 
 # -----------------------------------------------------------------------------
 # Global Variables (set by scripts that source this file)
@@ -20,291 +41,11 @@ NC='\033[0m' # No Color
 # BASE_DIR, PROJECT_DIR, DRY_RUN, VERBOSE
 
 # -----------------------------------------------------------------------------
-# Output Functions
+# Legacy Functions (To Be Migrated)
 # -----------------------------------------------------------------------------
-
-# Print colored output
-print_color() {
-    local color=$1
-    shift
-    echo -e "${color}$@${NC}"
-}
-
-# Print section header
-print_section() {
-    echo ""
-    print_color "$BLUE" "=== $1 ==="
-    echo ""
-}
-
-# Print status message
-print_status() {
-    print_color "$BLUE" "$1"
-}
-
-# Print success message
-print_success() {
-    print_color "$GREEN" "✓ $1"
-}
-
-# Print warning message
-print_warning() {
-    print_color "$YELLOW" "⚠️  $1"
-}
-
-# Print error message
-print_error() {
-    print_color "$RED" "✗ $1"
-}
-
-# Print error message with context and remedy
-# Usage: print_error_with_context "error message" "context details" "how to fix"
-print_error_with_context() {
-    local error=$1
-    local context=$2
-    local remedy=$3
-
-    print_color "$RED" "✗ ERROR: $error"
-    if [[ -n "$context" ]]; then
-        echo -e "  ${BLUE}Context:${NC} $context"
-    fi
-    if [[ -n "$remedy" ]]; then
-        echo -e "  ${GREEN}Fix:${NC} $remedy"
-    fi
-}
-
-# Print error with just a remedy (convenience function)
-# Usage: print_error_with_remedy "error message" "how to fix"
-print_error_with_remedy() {
-    local error=$1
-    local remedy=$2
-    print_error_with_context "$error" "" "$remedy"
-}
-
-# Print verbose message (only in verbose mode)
-print_verbose() {
-    if [[ "$VERBOSE" == "true" ]]; then
-        echo "[VERBOSE] $1" >&2
-    fi
-}
-
-# -----------------------------------------------------------------------------
-# String Normalization Functions
-# -----------------------------------------------------------------------------
-
-# Normalize input to lowercase, replace spaces/underscores with hyphens, remove punctuation
-normalize_name() {
-    local input=$1
-    echo "$input" | tr '[:upper:]' '[:lower:]' | sed 's/[ _]/-/g' | sed 's/[^a-z0-9-]//g'
-}
-
-# -----------------------------------------------------------------------------
-# Improved YAML Parsing Functions (More Robust)
-# -----------------------------------------------------------------------------
-
-# Normalize YAML line (handle tabs, trim spaces, etc.)
-normalize_yaml_line() {
-    echo "$1" | sed 's/\t/    /g' | sed 's/[[:space:]]*$//'
-}
-
-# Get indentation level (counts spaces/tabs at beginning)
-get_indent_level() {
-    local line="$1"
-    local normalized=$(echo "$line" | sed 's/\t/    /g')
-    local spaces=$(echo "$normalized" | sed 's/[^ ].*//')
-    echo "${#spaces}"
-}
-
-# Get a simple value from YAML (handles key: value format)
-# More robust: handles quotes, different spacing, tabs
-get_yaml_value() {
-    local file=$1
-    local key=$2
-    local default=$3
-
-    if [[ ! -f "$file" ]]; then
-        echo "$default"
-        return
-    fi
-
-    # Look for the key with flexible spacing and handle quotes
-    local value=$(awk -v key="$key" '
-        BEGIN { found=0 }
-        {
-            # Normalize tabs to spaces
-            gsub(/\t/, "    ")
-            # Remove leading/trailing spaces
-            gsub(/^[[:space:]]+/, "")
-            gsub(/[[:space:]]+$/, "")
-        }
-        # Match key: value (with or without spaces around colon)
-        $0 ~ "^" key "[[:space:]]*:" {
-            # Extract value after colon
-            sub("^" key "[[:space:]]*:[[:space:]]*", "")
-            # Remove quotes if present
-            gsub(/^["'\'']/, "")
-            gsub(/["'\'']$/, "")
-            # Handle empty value
-            if (length($0) > 0) {
-                print $0
-                found=1
-                exit
-            }
-        }
-        END { if (!found) exit 1 }
-    ' "$file" 2>/dev/null)
-
-    if [[ $? -eq 0 && -n "$value" ]]; then
-        echo "$value"
-    else
-        echo "$default"
-    fi
-}
-
-# Get array values from YAML (handles - item format under a key)
-# More robust: handles variable indentation
-get_yaml_array() {
-    local file=$1
-    local key=$2
-
-    if [[ ! -f "$file" ]]; then
-        return
-    fi
-
-    awk -v key="$key" '
-        BEGIN {
-            found=0
-            key_indent=-1
-            array_indent=-1
-        }
-        {
-            # Normalize tabs to spaces
-            gsub(/\t/, "    ")
-
-            # Get current line indentation
-            indent = match($0, /[^ ]/)
-            if (indent == 0) indent = length($0) + 1
-            indent = indent - 1
-
-            # Store original line for processing
-            line = $0
-            # Remove leading spaces for pattern matching
-            gsub(/^[[:space:]]+/, "")
-        }
-
-        # Found the key
-        !found && $0 ~ "^" key "[[:space:]]*:" {
-            found = 1
-            key_indent = indent
-            next
-        }
-
-        # Process array items under the key
-        found {
-            # If we hit a line with same or less indentation as key, stop
-            if (indent <= key_indent && $0 != "" && $0 !~ /^[[:space:]]*$/) {
-                exit
-            }
-
-            # Look for array items (- item)
-            if ($0 ~ /^-[[:space:]]/) {
-                # Set array indent from first item
-                if (array_indent == -1) {
-                    array_indent = indent
-                }
-
-                # Only process items at the expected indentation
-                if (indent == array_indent) {
-                    sub(/^-[[:space:]]*/, "")
-                    # Remove quotes if present
-                    gsub(/^["'\'']/, "")
-                    gsub(/["'\'']$/, "")
-                    print
-                }
-            }
-        }
-    ' "$file"
-}
-
-# -----------------------------------------------------------------------------
-# File Operations Functions
-# -----------------------------------------------------------------------------
-
-# Create directory if it doesn't exist (unless in dry-run mode)
-ensure_dir() {
-    local dir=$1
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        if [[ ! -d "$dir" ]]; then
-            print_verbose "Would create directory: $dir"
-        fi
-    else
-        if [[ ! -d "$dir" ]]; then
-            mkdir -p "$dir"
-            print_verbose "Created directory: $dir"
-        fi
-    fi
-}
-
-# Copy file with dry-run support
-copy_file() {
-    local source=$1
-    local dest=$2
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        echo "$dest"
-    else
-        ensure_dir "$(dirname "$dest")"
-        cp "$source" "$dest"
-        print_verbose "Copied: $source -> $dest"
-        echo "$dest"
-    fi
-}
-
-# Write content to file with dry-run support
-write_file() {
-    local content=$1
-    local dest=$2
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        echo "$dest"
-    else
-        ensure_dir "$(dirname "$dest")"
-        echo "$content" > "$dest"
-        print_verbose "Wrote file: $dest"
-    fi
-}
-
-# Check if file should be skipped during update
-should_skip_file() {
-    local file=$1
-    local overwrite_all=$2
-    local overwrite_type=$3
-    local file_type=$4
-
-    if [[ "$overwrite_all" == "true" ]]; then
-        return 1  # Don't skip
-    fi
-
-    if [[ ! -f "$file" ]]; then
-        return 1  # Don't skip - file doesn't exist
-    fi
-
-    # Check specific overwrite flags
-    case "$file_type" in
-        "agent")
-            [[ "$overwrite_type" == "true" ]] && return 1
-            ;;
-        "command")
-            [[ "$overwrite_type" == "true" ]] && return 1
-            ;;
-        "standard")
-            [[ "$overwrite_type" == "true" ]] && return 1
-            ;;
-    esac
-
-    return 0  # Skip file
-}
+# NOTE: Functions below this line are still in the monolithic file.
+# They will be progressively migrated to focused modules.
+# New code should use the modular versions from lib/ when available.
 
 # -----------------------------------------------------------------------------
 # Profile Functions
