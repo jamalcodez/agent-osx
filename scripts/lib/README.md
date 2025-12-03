@@ -40,6 +40,9 @@ scripts/
 - `print_error_with_remedy()` - Errors with fix instructions only
 - `print_verbose()` - Verbose mode output
 - `show_diff_preview()` - Display colored unified diff (dry-run mode)
+- `show_progress()` - Display progress counter with percentage
+- `show_compilation_progress()` - Display compilation progress with cache status
+- `clear_progress()` - Clear progress line before final output
 
 **Dependencies**: None (defines color constants)
 
@@ -53,6 +56,15 @@ print_error_with_context "File not found" "Path: /tmp/file" "Create the file fir
 old_content=$(cat existing_file.txt)
 new_content="New content here"
 show_diff_preview "$old_content" "$new_content" "existing_file.txt"
+
+# Show progress during long operations
+total_files=47
+for i in $(seq 1 $total_files); do
+    show_compilation_progress "$i" "$total_files" "file-$i.md"
+    # ... compile file ...
+done
+clear_progress
+echo "✓ Compiled $total_files files"
 ```
 
 ### yaml-parser.sh

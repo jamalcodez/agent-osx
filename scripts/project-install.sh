@@ -233,6 +233,16 @@ install_claude_code_commands_with_delegation() {
 
     mkdir -p "$target_dir"
 
+    # Count total files first for progress reporting
+    local total_files=0
+    while read file; do
+        if [[ "$file" == commands/*/multi-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
+            [[ -f "$source" ]] && ((total_files++))
+        fi
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Process files with progress reporting
     while read file; do
         # Process multi-agent command files OR orchestrate-tasks special case
         if [[ "$file" == commands/*/multi-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -242,15 +252,27 @@ install_claude_code_commands_with_delegation() {
                 local cmd_name=$(echo "$file" | cut -d'/' -f2)
                 local dest="$target_dir/${cmd_name}.md"
 
+                # Increment counter
+                ((commands_count++)) || true
+
+                # Show progress (unless dry-run)
+                if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+                    show_compilation_progress "$commands_count" "$total_files" "$cmd_name.md"
+                fi
+
                 # Compile with workflow and standards injection (includes conditional compilation)
                 local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
-                ((commands_count++)) || true
             fi
         fi
     done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Clear progress line
+    if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+        clear_progress
+    fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $commands_count -gt 0 ]]; then
@@ -267,6 +289,24 @@ install_claude_code_commands_without_delegation() {
 
     local commands_count=0
 
+    # Count total files first for progress reporting
+    local total_files=0
+    while read file; do
+        if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
+            if [[ -f "$source" ]]; then
+                if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
+                    ((total_files++))
+                else
+                    local filename=$(basename "$file")
+                    # Only count non-numbered files
+                    [[ ! "$filename" =~ ^[0-9]+-.*\.md$ ]] && ((total_files++))
+                fi
+            fi
+        fi
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Process files with progress reporting
     while read file; do
         # Process single-agent command files OR orchestrate-tasks special case
         if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
@@ -274,19 +314,33 @@ install_claude_code_commands_without_delegation() {
             if [[ -f "$source" ]]; then
                 # Handle orchestrate-tasks specially (flat destination)
                 if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
+                    ((commands_count++)) || true
+
+                    # Show progress
+                    if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+                        show_compilation_progress "$commands_count" "$total_files" "orchestrate-tasks.md"
+                    fi
+
                     local dest="$PROJECT_DIR/.claude/commands/agent-os/orchestrate-tasks.md"
                     # Compile without PHASE embedding for orchestrate-tasks
                     local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                     if [[ "$DRY_RUN" == "true" ]]; then
                         INSTALLED_FILES+=("$dest")
                     fi
-                    ((commands_count++)) || true
                 else
                     # Only install non-numbered files (e.g., plan-product.md, not 1-product-concept.md)
                     local filename=$(basename "$file")
                     if [[ ! "$filename" =~ ^[0-9]+-.*\.md$ ]]; then
+                        ((commands_count++)) || true
+
                         # Extract command name (e.g., commands/plan-product/single-agent/plan-product.md -> plan-product.md)
                         local cmd_name=$(echo "$file" | sed 's|commands/\([^/]*\)/single-agent/.*|\1|')
+
+                        # Show progress
+                        if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+                            show_compilation_progress "$commands_count" "$total_files" "$cmd_name.md"
+                        fi
+
                         local dest="$PROJECT_DIR/.claude/commands/agent-os/$cmd_name.md"
 
                         # Compile with PHASE embedding (mode="embed")
@@ -294,12 +348,16 @@ install_claude_code_commands_without_delegation() {
                         if [[ "$DRY_RUN" == "true" ]]; then
                             INSTALLED_FILES+=("$dest")
                         fi
-                        ((commands_count++)) || true
                     fi
                 fi
             fi
         fi
     done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Clear progress line
+    if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+        clear_progress
+    fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $commands_count -gt 0 ]]; then
@@ -316,27 +374,48 @@ install_claude_code_agents() {
 
     local agents_count=0
     local target_dir="$PROJECT_DIR/.claude/agents/agent-os"
-    
+
     mkdir -p "$target_dir"
 
+    # Count total files first for progress reporting
+    local total_files=0
+    while read file; do
+        if [[ "$file" == agents/*.md ]] && [[ "$file" != agents/templates/* ]]; then
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
+            [[ -f "$source" ]] && ((total_files++))
+        fi
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "agents")
+
+    # Process files with progress reporting
     while read file; do
         # Include all agent files (flatten structure - no subfolders in output)
         if [[ "$file" == agents/*.md ]] && [[ "$file" != agents/templates/* ]]; then
             local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
             if [[ -f "$source" ]]; then
+                ((agents_count++)) || true
+
                 # Get just the filename (flatten directory structure)
                 local filename=$(basename "$file")
                 local dest="$target_dir/$filename"
-                
+
+                # Show progress
+                if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+                    show_compilation_progress "$agents_count" "$total_files" "$filename"
+                fi
+
                 # Compile with workflow and standards injection
                 local compiled=$(compile_agent "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
-                ((agents_count++)) || true
             fi
         fi
     done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "agents")
+
+    # Clear progress line
+    if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+        clear_progress
+    fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $agents_count -gt 0 ]]; then
@@ -353,18 +432,37 @@ install_agent_os_commands() {
 
     local commands_count=0
 
+    # Count total files first for progress reporting
+    local total_files=0
+    while read file; do
+        if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
+            local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
+            [[ -f "$source" ]] && ((total_files++))
+        fi
+    done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Process files with progress reporting
     while read file; do
         # Process single-agent command files OR orchestrate-tasks special case
         if [[ "$file" == commands/*/single-agent/* ]] || [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
             local source=$(get_profile_file "$EFFECTIVE_PROFILE" "$file" "$BASE_DIR")
             if [[ -f "$source" ]]; then
+                ((commands_count++)) || true
+
                 # Handle orchestrate-tasks specially (preserve folder structure)
                 if [[ "$file" == commands/orchestrate-tasks/orchestrate-tasks.md ]]; then
                     local dest="$PROJECT_DIR/agent-os/commands/orchestrate-tasks/orchestrate-tasks.md"
+                    local filename="orchestrate-tasks.md"
                 else
                     # Extract command name and preserve numbering
                     local cmd_path=$(echo "$file" | sed 's|commands/\([^/]*\)/single-agent/\(.*\)|\1/\2|')
                     local dest="$PROJECT_DIR/agent-os/commands/$cmd_path"
+                    local filename=$(basename "$file")
+                fi
+
+                # Show progress
+                if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+                    show_compilation_progress "$commands_count" "$total_files" "$filename"
                 fi
 
                 # Compile with workflow and standards injection and PHASE embedding
@@ -372,10 +470,14 @@ install_agent_os_commands() {
                 if [[ "$DRY_RUN" == "true" ]]; then
                     INSTALLED_FILES+=("$dest")
                 fi
-                ((commands_count++)) || true
             fi
         fi
     done < <(get_profile_files "$EFFECTIVE_PROFILE" "$BASE_DIR" "commands")
+
+    # Clear progress line
+    if [[ "$DRY_RUN" != "true" ]] && [[ $total_files -gt 0 ]]; then
+        clear_progress
+    fi
 
     if [[ "$DRY_RUN" != "true" ]]; then
         if [[ $commands_count -gt 0 ]]; then

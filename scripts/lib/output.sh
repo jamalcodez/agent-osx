@@ -155,3 +155,44 @@ show_diff_preview() {
     done
     echo ""
 }
+
+# -----------------------------------------------------------------------------
+# Progress Reporting
+# -----------------------------------------------------------------------------
+
+# Show progress counter for long operations
+# Usage: show_progress "current" "total" "description"
+show_progress() {
+    local current=$1
+    local total=$2
+    local description=$3
+
+    # Calculate percentage
+    local percent=$(( current * 100 / total ))
+
+    # Show progress on same line (carriage return)
+    echo -ne "\r${BLUE}Progress: [${current}/${total}] ${percent}% - ${description}${NC}$(tput el)"
+}
+
+# Clear progress line and show completion
+# Usage: clear_progress
+clear_progress() {
+    echo -ne "\r$(tput el)"
+}
+
+# Show progress with optional cache hit indicator
+# Usage: show_compilation_progress "current" "total" "filename" "cache_hit"
+show_compilation_progress() {
+    local current=$1
+    local total=$2
+    local filename=$3
+    local cache_hit=${4:-""}
+
+    local status=""
+    if [[ "$cache_hit" == "true" ]]; then
+        status=" ${GREEN}[cached]${NC}"
+    fi
+
+    echo -ne "\r${BLUE}Compiling: [${current}/${total}]${NC} ${filename}${status}$(tput el)"
+}
+
