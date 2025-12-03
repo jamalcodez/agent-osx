@@ -594,15 +594,12 @@ perform_update() {
 
     # Update Claude Code files if enabled
     if [[ "$PROJECT_CLAUDE_CODE_COMMANDS" == "true" ]]; then
-        if [[ "$PROJECT_USE_CLAUDE_CODE_SUBAGENTS" == "true" ]]; then
-            update_claude_code_files
-            echo ""
-        else
-            # Update commands without delegation
-            # TODO: Need to implement this update function
-            update_claude_code_files
-            echo ""
-        fi
+        # update_claude_code_files handles both modes internally:
+        # - With subagents: installs multi-agent commands + agent files
+        # - Without subagents: installs single-agent commands with PHASE embedding
+        update_claude_code_files
+        echo ""
+
         # Install/update Claude Code Skills (uses install function since directory was cleaned)
         install_claude_code_skills
         install_improve_skills_command
