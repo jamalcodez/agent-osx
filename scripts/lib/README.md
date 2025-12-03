@@ -87,26 +87,49 @@ items=$(get_yaml_array "config.yml" "profiles")
 ```
 
 ### file-operations.sh
-**Purpose**: File system operations with dry-run support
+**Purpose**: File system operations with dry-run and transactional staging support
 
 **Functions**:
-- `ensure_dir()` - Create directory if needed (dry-run aware)
-- `copy_file()` - Copy file (dry-run aware)
-- `write_file()` - Write content to file (dry-run aware)
+- `ensure_dir()` - Create directory if needed (dry-run aware, staging aware)
+- `copy_file()` - Copy file (dry-run aware, staging aware)
+- `write_file()` - Write content to file (dry-run aware, staging aware)
 - `should_skip_file()` - Determine if file should be skipped during update
+- `init_staging()` - Initialize transactional staging directory
+- `get_staging_path()` - Convert target path to staging path
+- `commit_staging()` - Atomically commit staged files to target
+- `rollback_staging()` - Clean up staging on failure/interrupt
 
 **Dependencies**:
-- Uses `print_verbose()` from output.sh (must be sourced first)
-- Requires `$DRY_RUN` global variable
+- Uses `print_*()` functions from output.sh (must be sourced first)
+- Requires `$DRY_RUN`, `$PROJECT_DIR`, `$STAGING_ACTIVE` global variables
 
 **Usage**:
 ```bash
 source "scripts/lib/output.sh"
 source "scripts/lib/file-operations.sh"
 DRY_RUN="false"
+PROJECT_DIR="/path/to/project"
+
+# Standard file operations
 ensure_dir "/tmp/test"
 copy_file "source.txt" "/tmp/test/dest.txt"
+
+# Transactional operations
+init_staging "$PROJECT_DIR"
+trap 'rollback_staging; exit 1' EXIT ERR INT TERM
+
+# ... perform file operations (automatically use staging) ...
+
+commit_staging "$PROJECT_DIR"
+trap - EXIT ERR INT TERM  # Disable trap after success
 ```
+
+**Transactional Staging**:
+- All file operations automatically use staging when active
+- Staging directory: `$PROJECT_DIR/.agent-os-staging-$$`
+- Atomic commit via rsync or cp+rm
+- Automatic rollback on failure/interrupt (via trap)
+- Zero partial-state installations
 
 ### cache.sh
 **Purpose**: Content-based caching for template compilation

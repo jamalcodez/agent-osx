@@ -13,6 +13,11 @@
 ensure_dir() {
     local dir=$1
 
+    # Use staging path if staging is active
+    if [[ "$STAGING_ACTIVE" == "true" ]]; then
+        dir=$(get_staging_path "$dir" "$PROJECT_DIR")
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         if [[ ! -d "$dir" ]]; then
             print_verbose "Would create directory: $dir"
@@ -34,6 +39,12 @@ copy_file() {
     local source=$1
     local dest=$2
 
+    # Use staging path if staging is active
+    local actual_dest="$dest"
+    if [[ "$STAGING_ACTIVE" == "true" ]]; then
+        actual_dest=$(get_staging_path "$dest" "$PROJECT_DIR")
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         # Show diff if destination exists
         if [[ -f "$dest" ]]; then
@@ -43,9 +54,9 @@ copy_file() {
         fi
         echo "$dest"
     else
-        ensure_dir "$(dirname "$dest")"
-        cp "$source" "$dest"
-        print_verbose "Copied: $source -> $dest"
+        ensure_dir "$(dirname "$actual_dest")"
+        cp "$source" "$actual_dest"
+        print_verbose "Copied: $source -> $actual_dest"
         echo "$dest"
     fi
 }
@@ -55,6 +66,12 @@ write_file() {
     local content=$1
     local dest=$2
 
+    # Use staging path if staging is active
+    local actual_dest="$dest"
+    if [[ "$STAGING_ACTIVE" == "true" ]]; then
+        actual_dest=$(get_staging_path "$dest" "$PROJECT_DIR")
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         # Show diff if destination exists
         if [[ -f "$dest" ]]; then
@@ -63,9 +80,9 @@ write_file() {
         fi
         echo "$dest"
     else
-        ensure_dir "$(dirname "$dest")"
-        echo "$content" > "$dest"
-        print_verbose "Wrote file: $dest"
+        ensure_dir "$(dirname "$actual_dest")"
+        echo "$content" > "$actual_dest"
+        print_verbose "Wrote file: $actual_dest"
     fi
 }
 
@@ -103,3 +120,98 @@ should_skip_file() {
 
     return 0  # Skip file
 }
+
+# -----------------------------------------------------------------------------
+# Transactional Staging
+# -----------------------------------------------------------------------------
+
+# Global staging directory variable
+STAGING_DIR=""
+STAGING_ACTIVE="false"
+
+# Initialize staging directory for transactional operations
+# Usage: init_staging "$PROJECT_DIR"
+init_staging() {
+    local project_dir=$1
+
+    # Create unique staging directory
+    STAGING_DIR="$project_dir/.agent-os-staging-$$"
+
+    if [[ -d "$STAGING_DIR" ]]; then
+        print_warning "Staging directory already exists, cleaning up..."
+        rm -rf "$STAGING_DIR"
+    fi
+
+    mkdir -p "$STAGING_DIR"
+    STAGING_ACTIVE="true"
+
+    print_verbose "Initialized staging directory: $STAGING_DIR"
+}
+
+# Convert target path to staging path
+# Usage: staging_path=$(get_staging_path "$target_path" "$project_dir")
+get_staging_path() {
+    local target_path=$1
+    local project_dir=$2
+
+    if [[ "$STAGING_ACTIVE" != "true" ]]; then
+        # No staging - return original path
+        echo "$target_path"
+        return
+    fi
+
+    # Replace project directory with staging directory
+    local staging_path="${target_path/#$project_dir/$STAGING_DIR}"
+    echo "$staging_path"
+}
+
+# Commit staged files to final destination
+# Usage: commit_staging "$PROJECT_DIR"
+commit_staging() {
+    local project_dir=$1
+
+    if [[ "$STAGING_ACTIVE" != "true" ]] || [[ ! -d "$STAGING_DIR" ]]; then
+        print_verbose "No staging directory to commit"
+        return 0
+    fi
+
+    print_status "Committing installation..."
+
+    # Verify staging directory has content
+    if [[ ! "$(ls -A "$STAGING_DIR" 2>/dev/null)" ]]; then
+        print_verbose "Staging directory is empty, nothing to commit"
+        rm -rf "$STAGING_DIR"
+        STAGING_ACTIVE="false"
+        return 0
+    fi
+
+    # Move files from staging to target (atomic operation)
+    # Using rsync for atomic directory moves with progress
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --remove-source-files "$STAGING_DIR/" "$project_dir/"
+        # Remove empty directories from staging
+        find "$STAGING_DIR" -type d -empty -delete 2>/dev/null || true
+    else
+        # Fallback: use cp + rm
+        cp -R "$STAGING_DIR"/* "$project_dir/" 2>/dev/null || true
+        rm -rf "$STAGING_DIR"
+    fi
+
+    STAGING_ACTIVE="false"
+    print_verbose "Staging committed successfully"
+    return 0
+}
+
+# Rollback staged files (cleanup on failure)
+# Usage: rollback_staging
+rollback_staging() {
+    if [[ "$STAGING_ACTIVE" != "true" ]] || [[ ! -d "$STAGING_DIR" ]]; then
+        return 0
+    fi
+
+    print_warning "Installation interrupted, rolling back changes..."
+    rm -rf "$STAGING_DIR" 2>/dev/null || true
+    STAGING_ACTIVE="false"
+    print_verbose "Rollback complete"
+}
+

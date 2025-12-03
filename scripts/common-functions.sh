@@ -834,6 +834,12 @@ compile_agent() {
         fi
     fi
 
+    # Use staging path if staging is active
+    local actual_dest="$dest_file"
+    if [[ "$STAGING_ACTIVE" == "true" ]]; then
+        actual_dest=$(get_staging_path "$dest_file" "$PROJECT_DIR")
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         # Show diff if file exists
         if [[ -f "$dest_file" ]]; then
@@ -842,9 +848,9 @@ compile_agent() {
         fi
         echo "$dest_file"
     else
-        ensure_dir "$(dirname "$dest_file")"
-        echo "$content" > "$dest_file"
-        print_verbose "Compiled agent: $dest_file"
+        ensure_dir "$(dirname "$actual_dest")"
+        echo "$content" > "$actual_dest"
+        print_verbose "Compiled agent: $actual_dest"
     fi
 }
 

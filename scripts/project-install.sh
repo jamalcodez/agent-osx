@@ -511,6 +511,13 @@ create_agent_os_folder() {
 
 # Perform fresh installation
 perform_installation() {
+    # Initialize transactional staging (unless dry-run)
+    if [[ "$DRY_RUN" != "true" ]]; then
+        init_staging "$PROJECT_DIR"
+        # Set up trap handler for automatic rollback on failure/interrupt
+        trap 'rollback_staging; exit 1' EXIT ERR INT TERM
+    fi
+
     # Show dry run warning at the top if applicable
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "DRY RUN - No files will be actually created"
@@ -598,6 +605,13 @@ perform_installation() {
             perform_installation
         fi
     else
+        # Commit staged files to final destination
+        echo ""
+        commit_staging "$PROJECT_DIR"
+
+        # Disable trap (installation succeeded)
+        trap - EXIT ERR INT TERM
+
         print_success "Agent OS has been successfully installed in your project!"
         echo ""
         echo -e "${GREEN}Visit the docs for guides on how to use Agent OS: https://buildermethods.com/agent-os${NC}"
