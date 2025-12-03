@@ -21,6 +21,7 @@ source "$SCRIPT_DIR/common-functions.sh"
 
 DRY_RUN="false"
 VERBOSE="false"
+PRESET=""
 PROFILE=""
 CLAUDE_CODE_COMMANDS=""
 USE_CLAUDE_CODE_SUBAGENTS=""
@@ -44,11 +45,14 @@ Usage: $0 [OPTIONS]
 Install Agent OS into the current project directory.
 
 Options:
+    --preset PRESET                          Use configuration preset (default: from config.yml)
+                                             Available: claude-code-full, claude-code-simple,
+                                             claude-code-basic, cursor, multi-tool, custom
     --profile PROFILE                        Use specified profile (default: from config.yml)
-    --claude-code-commands [BOOL]            Install Claude Code commands (default: from config.yml)
-    --use-claude-code-subagents [BOOL]       Use Claude Code subagents (default: from config.yml)
-    --agent-os-commands [BOOL]               Install agent-os commands (default: from config.yml)
-    --standards-as-claude-code-skills [BOOL] Use Claude Code Skills for standards (default: from config.yml)
+    --claude-code-commands [BOOL]            Install Claude Code commands (default: from preset/config)
+    --use-claude-code-subagents [BOOL]       Use Claude Code subagents (default: from preset/config)
+    --agent-os-commands [BOOL]               Install agent-os commands (default: from preset/config)
+    --standards-as-claude-code-skills [BOOL] Use Claude Code Skills for standards (default: from preset/config)
     --re-install                             Delete and reinstall Agent OS
     --overwrite-all                          Overwrite all existing files during update
     --overwrite-standards                    Overwrite existing standards during update
@@ -61,10 +65,12 @@ Options:
 Note: Flags accept both hyphens and underscores (e.g., --use-claude-code-subagents or --use_claude_code_subagents)
 
 Examples:
-    $0
-    $0 --profile rails
-    $0 --claude-code-commands true --use-claude-code-subagents true
-    $0 --agent-os-commands true --dry-run
+    $0                                       # Use preset from config.yml
+    $0 --preset claude-code-full             # Override with preset
+    $0 --preset cursor                       # Use Cursor preset
+    $0 --profile rails                       # Use rails profile
+    $0 --preset claude-code-full --agent-os-commands true  # Preset + override
+    $0 --dry-run                             # Preview changes
 
 EOF
     exit 0
@@ -80,6 +86,10 @@ parse_arguments() {
         local flag="${1//_/-}"
 
         case $flag in
+            --preset)
+                PRESET="$2"
+                shift 2
+                ;;
             --profile)
                 PROFILE="$2"
                 shift 2
@@ -144,6 +154,11 @@ parse_arguments() {
 # -----------------------------------------------------------------------------
 
 load_configuration() {
+    # Set preset override if provided via command line
+    if [[ -n "$PRESET" ]]; then
+        export PRESET_OVERRIDE="$PRESET"
+    fi
+
     # Load base configuration using common function
     load_base_config
 

@@ -2,9 +2,47 @@ version: 2.1.1
 base_install: true
 
 
-# CONFIGURATION
-# Configure defaults for the tools you use and how Agent OS should compile commands for your projects.
+# =============================================================================
+# CONFIGURATION PRESETS (Recommended for most users)
+# =============================================================================
+#
+# Choose a preset that matches your workflow. Presets configure all settings
+# automatically. You can override individual settings below if needed.
+#
+# Available presets:
+#
+#   claude-code-full      - Claude Code with subagents and Skills (recommended)
+#                           Best for: Complex projects, maximum context efficiency
+#
+#   claude-code-simple    - Claude Code without subagents, no Skills
+#                           Best for: Simpler projects, faster execution
+#
+#   claude-code-basic     - Claude Code with minimal features
+#                           Best for: Getting started, learning Agent OS
+#
+#   cursor                - Optimized for Cursor and similar tools
+#                           Best for: Non-Claude Code AI coding tools
+#
+#   multi-tool            - Both Claude Code and agent-os formats
+#                           Best for: Using multiple AI coding tools
+#
+#   custom                - Don't use preset, configure manually below
+#                           Best for: Advanced users with specific needs
+#
+# =============================================================================
 
+preset: claude-code-full
+
+
+# =============================================================================
+# ADVANCED: Manual Configuration (only needed if preset is "custom")
+# =============================================================================
+#
+# If you set preset to "custom" above, configure these settings manually.
+# Otherwise, these are automatically set by your chosen preset and can be
+# left as-is (though you can override individual settings if needed).
+#
+# =============================================================================
 
 # ================================================
 # Do you use Claude Code?

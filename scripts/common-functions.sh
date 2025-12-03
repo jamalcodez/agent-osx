@@ -943,14 +943,96 @@ parse_bool_flag() {
 # Configuration Loading Helpers
 # -----------------------------------------------------------------------------
 
+# Apply preset configuration
+# Returns configuration values for a given preset
+apply_preset() {
+    local preset=$1
+
+    case "$preset" in
+        "claude-code-full")
+            # Claude Code with all features (recommended)
+            echo "claude_code_commands=true"
+            echo "use_claude_code_subagents=true"
+            echo "agent_os_commands=false"
+            echo "standards_as_claude_code_skills=true"
+            ;;
+        "claude-code-simple")
+            # Claude Code without subagents or Skills
+            echo "claude_code_commands=true"
+            echo "use_claude_code_subagents=false"
+            echo "agent_os_commands=false"
+            echo "standards_as_claude_code_skills=false"
+            ;;
+        "claude-code-basic")
+            # Minimal Claude Code setup
+            echo "claude_code_commands=true"
+            echo "use_claude_code_subagents=false"
+            echo "agent_os_commands=false"
+            echo "standards_as_claude_code_skills=false"
+            ;;
+        "cursor")
+            # Optimized for Cursor and similar tools
+            echo "claude_code_commands=false"
+            echo "use_claude_code_subagents=false"
+            echo "agent_os_commands=true"
+            echo "standards_as_claude_code_skills=false"
+            ;;
+        "multi-tool")
+            # Both Claude Code and agent-os formats
+            echo "claude_code_commands=true"
+            echo "use_claude_code_subagents=true"
+            echo "agent_os_commands=true"
+            echo "standards_as_claude_code_skills=false"
+            ;;
+        "custom"|"")
+            # No preset - use manual configuration
+            echo "preset=custom"
+            ;;
+        *)
+            # Unknown preset - warn and use custom
+            print_warning "Unknown preset '$preset' - using custom configuration"
+            echo "preset=custom"
+            ;;
+    esac
+}
+
 # Load base installation configuration
 load_base_config() {
     BASE_VERSION=$(get_yaml_value "$BASE_DIR/config.yml" "version" "2.1.0")
     BASE_PROFILE=$(get_yaml_value "$BASE_DIR/config.yml" "profile" "default")
-    BASE_CLAUDE_CODE_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "claude_code_commands" "true")
-    BASE_USE_CLAUDE_CODE_SUBAGENTS=$(get_yaml_value "$BASE_DIR/config.yml" "use_claude_code_subagents" "true")
-    BASE_AGENT_OS_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "agent_os_commands" "false")
-    BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS=$(get_yaml_value "$BASE_DIR/config.yml" "standards_as_claude_code_skills" "true")
+
+    # Check for preset configuration (command line override takes precedence)
+    local preset="${PRESET_OVERRIDE:-$(get_yaml_value "$BASE_DIR/config.yml" "preset" "custom")}"
+
+    if [[ "$preset" != "custom" ]] && [[ -n "$preset" ]]; then
+        # Apply preset defaults
+        print_verbose "Applying preset: $preset"
+        local preset_config=$(apply_preset "$preset")
+
+        # Extract values from preset
+        BASE_CLAUDE_CODE_COMMANDS=$(echo "$preset_config" | grep "claude_code_commands=" | cut -d= -f2)
+        BASE_USE_CLAUDE_CODE_SUBAGENTS=$(echo "$preset_config" | grep "use_claude_code_subagents=" | cut -d= -f2)
+        BASE_AGENT_OS_COMMANDS=$(echo "$preset_config" | grep "agent_os_commands=" | cut -d= -f2)
+        BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS=$(echo "$preset_config" | grep "standards_as_claude_code_skills=" | cut -d= -f2)
+
+        # Allow overrides from config file (if explicitly set)
+        local file_claude_code=$(get_yaml_value "$BASE_DIR/config.yml" "claude_code_commands" "")
+        local file_subagents=$(get_yaml_value "$BASE_DIR/config.yml" "use_claude_code_subagents" "")
+        local file_agent_os=$(get_yaml_value "$BASE_DIR/config.yml" "agent_os_commands" "")
+        local file_skills=$(get_yaml_value "$BASE_DIR/config.yml" "standards_as_claude_code_skills" "")
+
+        # Only override if value exists in file (allows preset + selective overrides)
+        [[ -n "$file_claude_code" ]] && BASE_CLAUDE_CODE_COMMANDS="$file_claude_code"
+        [[ -n "$file_subagents" ]] && BASE_USE_CLAUDE_CODE_SUBAGENTS="$file_subagents"
+        [[ -n "$file_agent_os" ]] && BASE_AGENT_OS_COMMANDS="$file_agent_os"
+        [[ -n "$file_skills" ]] && BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS="$file_skills"
+    else
+        # No preset - use manual configuration from file
+        BASE_CLAUDE_CODE_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "claude_code_commands" "true")
+        BASE_USE_CLAUDE_CODE_SUBAGENTS=$(get_yaml_value "$BASE_DIR/config.yml" "use_claude_code_subagents" "true")
+        BASE_AGENT_OS_COMMANDS=$(get_yaml_value "$BASE_DIR/config.yml" "agent_os_commands" "false")
+        BASE_STANDARDS_AS_CLAUDE_CODE_SKILLS=$(get_yaml_value "$BASE_DIR/config.yml" "standards_as_claude_code_skills" "false")
+    fi
 
     # Check for old config flags to set variables for validation
     MULTI_AGENT_MODE=$(get_yaml_value "$BASE_DIR/config.yml" "multi_agent_mode" "")
