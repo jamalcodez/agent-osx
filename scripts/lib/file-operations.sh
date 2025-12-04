@@ -13,8 +13,9 @@
 ensure_dir() {
     local dir=$1
 
-    # Use staging path if staging is active
-    if [[ "$STAGING_ACTIVE" == "true" ]]; then
+    # Don't convert to staging if path already contains staging directory
+    # (caller may have already converted it)
+    if [[ "$STAGING_ACTIVE" == "true" ]] && [[ "$dir" != *"$STAGING_DIR"* ]]; then
         dir=$(get_staging_path "$dir" "$PROJECT_DIR")
     fi
 
