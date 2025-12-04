@@ -3,8 +3,8 @@
 # Test helper functions and setup
 # This file is sourced by test files
 
-# Get the project root directory
-AGENT_OS_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+# Get the project root directory (two levels up from test file location)
+AGENT_OS_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
 export AGENT_OS_ROOT
 
 # Source the common functions for testing
