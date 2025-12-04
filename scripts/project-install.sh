@@ -229,7 +229,13 @@ install_claude_code_commands_with_delegation() {
     fi
 
     local commands_count=0
-    local target_dir="$PROJECT_DIR/.claude/commands/agent-os"
+    # Determine target directory based on whether agent-os commands are enabled
+    local target_dir
+    if [[ "$EFFECTIVE_AGENT_OS_COMMANDS" == "true" ]]; then
+        target_dir="$PROJECT_DIR/.claude/commands/agent-os"
+    else
+        target_dir="$PROJECT_DIR/.claude/commands"
+    fi
 
     mkdir -p "$target_dir"
 
@@ -321,7 +327,13 @@ install_claude_code_commands_without_delegation() {
                         show_compilation_progress "$commands_count" "$total_files" "orchestrate-tasks.md"
                     fi
 
-                    local dest="$PROJECT_DIR/.claude/commands/agent-os/orchestrate-tasks.md"
+                    # Determine target directory
+                    local dest
+                    if [[ "$EFFECTIVE_AGENT_OS_COMMANDS" == "true" ]]; then
+                        dest="$PROJECT_DIR/.claude/commands/agent-os/orchestrate-tasks.md"
+                    else
+                        dest="$PROJECT_DIR/.claude/commands/orchestrate-tasks.md"
+                    fi
                     # Compile without PHASE embedding for orchestrate-tasks
                     local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "")
                     if [[ "$DRY_RUN" == "true" ]]; then
@@ -341,7 +353,13 @@ install_claude_code_commands_without_delegation() {
                             show_compilation_progress "$commands_count" "$total_files" "$cmd_name.md"
                         fi
 
-                        local dest="$PROJECT_DIR/.claude/commands/agent-os/$cmd_name.md"
+                        # Determine target directory
+                        local dest
+                        if [[ "$EFFECTIVE_AGENT_OS_COMMANDS" == "true" ]]; then
+                            dest="$PROJECT_DIR/.claude/commands/agent-os/$cmd_name.md"
+                        else
+                            dest="$PROJECT_DIR/.claude/commands/$cmd_name.md"
+                        fi
 
                         # Compile with PHASE embedding (mode="embed")
                         local compiled=$(compile_command "$source" "$dest" "$BASE_DIR" "$EFFECTIVE_PROFILE" "embed")
@@ -373,7 +391,13 @@ install_claude_code_agents() {
     fi
 
     local agents_count=0
-    local target_dir="$PROJECT_DIR/.claude/agents/agent-os"
+    # Determine target directory based on whether agent-os commands are enabled
+    local target_dir
+    if [[ "$EFFECTIVE_AGENT_OS_COMMANDS" == "true" ]]; then
+        target_dir="$PROJECT_DIR/.claude/agents/agent-os"
+    else
+        target_dir="$PROJECT_DIR/.claude/agents"
+    fi
 
     mkdir -p "$target_dir"
 
