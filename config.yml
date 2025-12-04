@@ -35,52 +35,65 @@ preset: claude-code-full
 
 
 # =============================================================================
-# ADVANCED: Manual Configuration (only needed if preset is "custom")
+# ADVANCED: Manual Configuration
 # =============================================================================
 #
-# If you set preset to "custom" above, configure these settings manually.
-# Otherwise, these are automatically set by your chosen preset and can be
-# left as-is (though you can override individual settings if needed).
+# IMPORTANT: When using a preset (not "custom"), these manual settings will
+# OVERRIDE the preset defaults. This is intentional for advanced use cases,
+# but most users should either:
+#   1. Keep these settings commented out (let preset control everything)
+#   2. Set preset to "custom" (configure everything manually)
+#
+# Configuration Priority (highest to lowest):
+#   1. Command-line flags (--claude-code-commands, etc.)
+#   2. These manual settings below (if uncommented)
+#   3. Preset defaults
+#
+# What each preset sets:
+#   claude-code-full:   claude_code=true, subagents=true, skills=true,  agent_os=false
+#   claude-code-simple: claude_code=true, subagents=false, skills=true, agent_os=false
+#   claude-code-basic:  claude_code=true, subagents=false, skills=false, agent_os=false
+#   cursor:             claude_code=false, subagents=false, skills=false, agent_os=true
+#   multi-tool:         claude_code=true, subagents=true, skills=true,  agent_os=true
 #
 # =============================================================================
 
 # ================================================
 # Do you use Claude Code?
-# Set to true to install commands in your project's .claude/commands/agent-os/ folder
+# Controls whether commands are installed in .claude/commands/
 #
-# Override this default when running project-install.sh by using the flag --claude-code-commands=true/false
+# Uncomment to override preset:
+# claude_code_commands: true
 # ================================================
-claude_code_commands: true
 
 
 # ================================================
 # Do you use other coding tools (Cursor, Windsurf, etc.)?
-# Set to true to install commands in your project's agent-os/commands/ folder
+# Controls whether commands are installed in agent-os/commands/
 #
-# Override this default when running project-install.sh by using the flag --agent-os-commands true/false
+# Uncomment to override preset:
+# agent_os_commands: false
 # ================================================
-agent_os_commands: false
 
 
 # ================================================
 # Do you want Claude Code to use subagents?
-# Set to true to install agents in .claude/agents/agent-os/ and have commands delegate to them
+# Controls whether to use .claude/agents/ with delegation pattern
 # Requires claude_code_commands: true
 #
-# Override this default when running project-install.sh by using the flag --use-claude-code-subagents true/false
+# Uncomment to override preset:
+# use_claude_code_subagents: true
 # ================================================
-use_claude_code_subagents: true
 
 
 # ================================================
 # Should standards be provided to Claude Code as Skills?
-# Set to true to use Claude Code's Skills feature for reading standards
-# Set to false to inject standards as file references in command prompts
-# Requires claude_code_commands: true (automatically treated as false if claude_code_commands is false)
+# Controls whether standards use Skills feature vs inline injection
+# Requires claude_code_commands: true
 #
-# Override this default when running project-install.sh by using the flag --standards-as-claude-code-skills true/false
+# Uncomment to override preset:
+# standards_as_claude_code_skills: false
 # ================================================
-standards_as_claude_code_skills: false
 
 
 # ================================================
