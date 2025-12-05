@@ -1,609 +1,301 @@
 # Creating Custom Profiles
 
-This guide shows you how to create custom agent-os profiles tailored to your project needs.
+Custom profiles let you tailor Agent OS to your specific project needs, team preferences, and development workflow. This guide will help you create your own profile from scratch or by modifying an existing one.
 
-## Quick Start
+## Why Create a Custom Profile?
+
+You might want a custom profile to:
+- **Add your own commands** for specific workflows
+- **Include team-specific coding standards**
+- **Add project-specific agent behaviors**
+- **Create workflows for your tech stack**
+- **Integrate with your existing tools**
+
+## Quick Start: Create Your First Profile
+
+### Option 1: Copy the Default Profile (Recommended)
+
+The easiest way to start is by copying the default profile:
 
 ```bash
-# 1. Create a new profile
-cd ~/agent-os
-./scripts/create-profile.sh my-custom-profile
+# 1. Copy the default profile
+cp -r profiles/default profiles/my-profile
 
-# 2. Add your content to the profile
-cd profiles/my-custom-profile
-# Edit commands/, agents/, standards/, workflows/
-
-# 3. Install your profile
-cd ~/my-project
-~/agent-os/scripts/project-install.sh \
-  --profile my-custom-profile \
-  --preset claude-code-full
+# 2. Use your custom profile
+./scripts/project-install.sh --profile my-profile --preset claude-code-full
 ```
 
-## Profile Structure
+### Option 2: Create from Scratch
 
-A profile contains these directories:
+```bash
+# 1. Create a new empty profile
+mkdir -p profiles/my-profile/{commands,agents,standards,workflows}
 
-```
-profiles/my-custom-profile/
-├── commands/          # Slash commands for Claude Code or other tools
-│   ├── my-command/
-│   │   ├── single-agent/   # For embedded agent mode
-│   │   │   └── my-command.md
-│   │   └── multi-agent/    # For subagent delegation mode
-│   │       └── my-command.md
-│   └── another-command/
-│       └── ...
-├── agents/            # Agent definitions (for subagent mode)
-│   ├── my-agent.md
-│   └── another-agent.md
-├── standards/         # Coding standards and guidelines
-│   ├── coding/
-│   │   ├── style.md
-│   │   └── naming.md
-│   ├── testing/
-│   │   └── unit-tests.md
-│   └── security/
-│       └── auth.md
-└── workflows/         # Reusable workflow snippets
-    ├── planning/
-    │   └── gather-requirements.md
-    └── implementation/
-        └── write-tests.md
+# 2. Create the minimal required files
+touch profiles/my-profile/commands/.keep
+touch profiles/my-profile/agents/.keep
+touch profiles/my-profile/standards/.keep
+touch profiles/my-profile/workflows/.keep
+
+# 3. Use your profile
+./scripts/project-install.sh --profile my-profile --preset claude-code-simple
 ```
 
-## Template Syntax
+## Understanding Profile Structure
 
-Agent-os templates support powerful features for dynamic content:
+A profile contains four main directories:
 
-### 1. Workflow Inclusion
+### 📁 commands/
+Slash commands that trigger workflows. Each command has:
+- `single-agent/` - For simple, single-agent workflows
+- `multi-agent/` - For complex workflows using subagents
 
-Include reusable workflow snippets:
+### 📁 agents/
+Agent definitions for subagent mode. Define specialized agents for different tasks.
 
+### 📁 standards/
+Your coding standards and guidelines. Organized by category:
+- `coding/` - Style guides, naming conventions
+- `testing/` - Testing standards and practices
+- `security/` - Security guidelines
+- `frontend/` - UI/UX standards
+- `backend/` - API and server standards
+
+### 📁 workflows/
+Reusable workflow snippets that can be included in commands.
+
+## Simple Customization Examples
+
+### Adding Your Own Standards
+
+1. Create a standards file:
+```bash
+mkdir -p profiles/my-profile/standards/coding
+cat > profiles/my-profile/standards/coding/my-rules.md << 'EOF'
+# My Team's Coding Rules
+
+1. Always use TypeScript
+2. Function names must be verbs
+3. No hardcoded magic numbers
+4. Add JSDoc comments to all public functions
+EOF
+```
+
+2. Reference it in commands:
 ```markdown
-## Step 1: Gather Requirements
-
-{{workflows/planning/gather-requirements}}
+{{standards/coding/my-rules.md}}
 ```
 
-### 2. Standards Inclusion
+### Creating a Simple Command
 
-Include coding standards:
+1. Create the command structure:
+```bash
+mkdir -p profiles/my-profile/commands/my-cool-command/single-agent
+```
+
+2. Create the command file:
+```bash
+cat > profiles/my-profile/commands/my-cool-command/single-agent/my-cool-command.md << 'EOF'
+# My Cool Command
+
+This command does something cool for my project.
+
+## Steps to Follow
+
+1. First, do this
+2. Then, do that
+3. Finally, verify it works
+
+{{standards/coding/my-rules.md}}
+EOF
+```
+
+3. Use your command:
+```bash
+/my-cool-command
+```
+
+## Template Syntax (The Easy Parts)
+
+You don't need to know everything about template syntax to start. Here are the most useful patterns:
+
+### Including Standards
 
 ```markdown
 ## Standards to Follow
 
-{{standards/coding/*.md}}        # Include all coding standards
-{{standards/testing/unit-tests.md}}  # Include specific standard
+{{standards/coding/*.md}}  # Include all coding standards
+{{standards/testing/unit-tests.md}}  # Include one specific file
 ```
 
-### 3. Conditional Compilation
+### Including Workflows
 
-Show content based on configuration:
+```markdown
+## Planning Phase
+
+{{workflows/planning/gather-requirements.md}}
+```
+
+### Conditional Content (Advanced)
+
+Show different content based on your configuration:
 
 ```markdown
 IF{{use_claude_code_subagents}}
-Use the **my-agent** subagent to handle this task.
-ENDIF{{use_claude_code_subagents}}
-
-UNLESS{{use_claude_code_subagents}}
-Handle this task inline with the following steps:
+Use specialized agents for this task
+ELSE
+Handle it yourself with these steps:
 1. Step one
 2. Step two
-ENDUNLESS{{use_claude_code_subagents}}
+ENDIF{{use_claude_code_subagents}}
 ```
 
-### 4. Phase Embedding
+## Real-World Example: React Profile
 
-Embed numbered phases for structured workflows:
+Here's how to create a profile optimized for React development:
 
-```markdown
-{{PHASE}}1. Initial Setup
-- Create project structure
-- Initialize configuration
-
-{{PHASE}}2. Implementation
-- Write core functionality
-- Add error handling
-
-{{PHASE}}3. Testing
-- Write unit tests
-- Run test suite
-```
-
-When compiled in single-agent mode, this becomes:
-```markdown
-### Phase 1: Initial Setup
-- Create project structure
-- Initialize configuration
-
-### Phase 2: Implementation
-...
-```
-
-## Example: Simple Custom Profile
-
-Let's create a profile for React development:
-
-### Step 1: Create Profile Structure
+### Step 1: Create the Profile
 
 ```bash
-cd ~/agent-os
-./scripts/create-profile.sh react-dev
-cd profiles/react-dev
+# Copy default profile as a starting point
+cp -r profiles/default profiles/react-dev
 ```
 
-### Step 2: Create a Command
+### Step 2: Add React-Specific Standards
 
 ```bash
-# Create directory
-mkdir -p commands/create-component/single-agent
+cat > profiles/react-dev/standards/react/components.md << 'EOF'
+# React Component Standards
 
-# Create the command file
-cat > commands/create-component/single-agent/create-component.md << 'EOF'
+## Structure
+- Use functional components with TypeScript
+- File name matches component name (PascalCase)
+- Co-locate styles: ComponentName.module.css
+- Always export components with named exports
+
+## Example
+```typescript
+import React from 'react';
+import styles from './Button.module.css';
+
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  onClick,
+  variant = 'primary'
+}) => {
+  return (
+    <button
+      className={`${styles.button} ${styles[variant]}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+};
+```
+EOF
+```
+
+### Step 3: Create a React-Specific Command
+
+```bash
+mkdir -p profiles/react-dev/commands/create-component/single-agent
+
+cat > profiles/react-dev/commands/create-component/single-agent/create-component.md << 'EOF'
 ---
 name: create-component
-description: Create a new React component with tests
+description: Create a new React component with TypeScript and styles
 ---
 
 # Create React Component
 
-You will create a new React component following our standards.
+I'll help you create a new React component following our standards.
 
-## Standards
+{{standards/react/components.md}}
 
-{{standards/react/*.md}}
-{{standards/testing/*.md}}
+## What I need from you:
 
-## Workflow
+1. **Component name** (PascalCase, e.g., UserCard)
+2. **What does it do?** (brief description)
+3. **Any props it needs?** (list them with types)
 
-{{PHASE}}1. Component Structure
-- Create component file in `src/components/`
-- Use TypeScript with proper types
-- Follow functional component pattern
+## Once you provide those details, I will:
 
-{{PHASE}}2. Component Implementation
-- Implement the component logic
-- Add PropTypes or TypeScript interfaces
-- Include JSDoc comments
+{{PHASE}}1. Create the component file
+- Generate TypeScript interface for props
+- Create the functional component
+- Add JSDoc documentation
 
-{{PHASE}}3. Styling
-- Create corresponding CSS/SCSS file
-- Use CSS modules or styled-components
-- Follow responsive design principles
+{{PHASE}}2. Add styling
+- Create CSS module file
+- Add base styles
+- Include responsive design
 
-{{PHASE}}4. Testing
-- Create test file: `ComponentName.test.tsx`
-- Write unit tests for all props
-- Test edge cases and error states
+{{PHASE}}3. Add tests
+- Create test file with React Testing Library
+- Write tests for all props
+- Test user interactions
 
-{{PHASE}}5. Documentation
-- Add usage examples in comments
-- Document all props
-- Include Storybook story if applicable
+{{PHASE}}4. Add story (optional)
+- Create Storybook story
+- Document all variants
 
-## Ask the User
-
-Before starting, ask the user:
-1. Component name
-2. Component purpose/functionality
-3. Required props
-4. Any specific requirements
+Ready to create your component!
 EOF
 ```
 
-### Step 3: Create Standards
+### Step 4: Use Your Profile
 
 ```bash
-mkdir -p standards/react
-
-cat > standards/react/component-standards.md << 'EOF'
-# React Component Standards
-
-## Naming
-- Use PascalCase for component names
-- File name should match component name
-- Use descriptive names (e.g., `UserProfileCard`, not `Card`)
-
-## Structure
-```typescript
-// Imports
-import React from 'react';
-import styles from './ComponentName.module.css';
-
-// Types/Interfaces
-interface ComponentNameProps {
-  title: string;
-  onAction?: () => void;
-}
-
-// Component
-export const ComponentName: React.FC<ComponentNameProps> = ({
-  title,
-  onAction
-}) => {
-  return (
-    <div className={styles.container}>
-      {/* Component JSX */}
-    </div>
-  );
-};
+./scripts/project-install.sh --profile react-dev --preset claude-code-full
 ```
 
-## Best Practices
-- Keep components small and focused
-- Extract reusable logic into hooks
-- Use TypeScript for type safety
-- Always handle loading and error states
-EOF
-
-mkdir -p standards/testing
-
-cat > standards/testing/react-testing.md << 'EOF'
-# React Testing Standards
-
-## Testing Library
-Use React Testing Library with Jest.
-
-## What to Test
-- Component renders without errors
-- Props are used correctly
-- User interactions work as expected
-- Conditional rendering works
-- Error boundaries catch errors
-
-## Example Test
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ComponentName } from './ComponentName';
-
-describe('ComponentName', () => {
-  it('renders with required props', () => {
-    render(<ComponentName title="Test" />);
-    expect(screen.getByText('Test')).toBeInTheDocument();
-  });
-
-  it('handles user interaction', () => {
-    const onAction = jest.fn();
-    render(<ComponentName title="Test" onAction={onAction} />);
-    fireEvent.click(screen.getByRole('button'));
-    expect(onAction).toHaveBeenCalled();
-  });
-});
+Now you can use your custom command:
+```bash
+/create-component
 ```
 EOF
 ```
 
-### Step 4: Create Workflows
+## Best Practices for Custom Profiles
 
+### 1. Start Small
+Don't try to customize everything at once. Start with:
+- One custom command
+- A few key standards
+- Basic workflow adjustments
+
+### 2. Copy and Modify
+Always start by copying the default profile. It has all the basic structure you need.
+
+### 3. Test Incrementally
+After each change:
 ```bash
-mkdir -p workflows/react
-
-cat > workflows/react/component-checklist.md << 'EOF'
-## Component Checklist
-
-Before completing, verify:
-- [ ] Component follows naming conventions
-- [ ] TypeScript types are defined
-- [ ] PropTypes or interfaces documented
-- [ ] Responsive design implemented
-- [ ] Accessibility attributes added (ARIA labels, roles)
-- [ ] Unit tests written and passing
-- [ ] Error states handled
-- [ ] Loading states handled
-- [ ] Component is exported from index
-EOF
+./scripts/project-install.sh --profile my-profile --preset claude-code-basic --dry-run
 ```
 
-### Step 5: Install and Test
+### 4. Keep It Organized
+- Use clear, descriptive names
+- Group related files
+- Add comments explaining complex parts
 
-```bash
-cd ~/my-react-project
-~/agent-os/scripts/project-install.sh \
-  --profile react-dev \
-  --preset claude-code-simple
+### 5. Document Your Profile
+Create a README.md in your profile directory explaining:
+- What the profile is for
+- What customizations it includes
+- How to use it
 
-# Check the installed command
-cat .claude/commands/create-component.md
-```
+## Need More Help?
 
-## Example: Multi-Agent Profile
+- Check the [Template Syntax Reference](../profiles/default/TEMPLATE_SYNTAX.md) for advanced features
+- Look at the [default profile](../profiles/default/) for examples
+- See [community profiles](https://github.com/topics/agent-os-profile) for inspiration
+- Ask questions in GitHub issues
 
-For complex workflows with subagents:
-
-```bash
-mkdir -p profiles/fullstack/commands/build-feature/multi-agent
-mkdir -p profiles/fullstack/agents
-
-# Main command (delegates to subagents)
-cat > profiles/fullstack/commands/build-feature/multi-agent/build-feature.md << 'EOF'
----
-name: build-feature
-description: Build a full-stack feature with frontend, backend, and tests
----
-
-# Build Full-Stack Feature
-
-This command orchestrates building a complete feature.
-
-## Standards
-{{standards/architecture/*.md}}
-
-## Process
-
-### Phase 1: Planning
-Use the **feature-planner** agent to:
-- Analyze requirements
-- Create technical spec
-- Identify dependencies
-
-### Phase 2: Backend Development
-Use the **backend-developer** agent to:
-- Create API endpoints
-- Implement business logic
-- Add database migrations
-
-### Phase 3: Frontend Development
-Use the **frontend-developer** agent to:
-- Create UI components
-- Integrate with backend
-- Add client-side validation
-
-### Phase 4: Testing
-Use the **test-engineer** agent to:
-- Write integration tests
-- Write E2E tests
-- Verify all functionality
-EOF
-
-# Create subagents
-cat > profiles/fullstack/agents/feature-planner.md << 'EOF'
----
-name: feature-planner
-description: Plans feature architecture and creates technical specs
-tools: Write, Read, Bash
----
-
-# Feature Planning Agent
-
-You are a technical architect who creates detailed feature specifications.
-
-## Your Process
-
-{{workflows/planning/technical-spec}}
-
-## Standards
-
-{{standards/architecture/*.md}}
-{{standards/api-design/*.md}}
-
-## Deliverables
-
-Create these files:
-1. `docs/specs/[feature-name].md` - Technical specification
-2. `docs/api/[feature-name].md` - API design
-3. `docs/db/[feature-name].sql` - Database schema
-EOF
-```
-
-## Configuration Presets
-
-When installing a profile, use presets to control behavior:
-
-### claude-code-full
-Best for comprehensive Claude Code usage:
-```bash
-~/agent-os/scripts/project-install.sh \
-  --profile my-profile \
-  --preset claude-code-full
-```
-- Claude Code commands: ✓
-- Subagents: ✓
-- Standards as Skills: ✓
-- Agent-os commands: ✗
-
-### claude-code-simple
-For simpler single-agent mode:
-```bash
-~/agent-os/scripts/project-install.sh \
-  --profile my-profile \
-  --preset claude-code-simple
-```
-- Claude Code commands: ✓
-- Subagents: ✗
-- Standards as Skills: ✓
-- Agent-os commands: ✗
-
-### cursor
-Optimized for Cursor IDE:
-```bash
-~/agent-os/scripts/project-install.sh \
-  --profile my-profile \
-  --preset cursor
-```
-- Claude Code commands: ✗
-- Subagents: ✗
-- Standards as Skills: ✗
-- Agent-os commands: ✓
-
-### multi-tool
-Use both Claude Code and agent-os:
-```bash
-~/agent-os/scripts/project-install.sh \
-  --profile my-profile \
-  --preset multi-tool
-```
-- Claude Code commands: ✓
-- Subagents: ✓
-- Standards as Skills: ✓
-- Agent-os commands: ✓
-
-## Best Practices
-
-### 1. Keep Commands Focused
-Each command should do one thing well:
-- ✓ Good: `create-component`, `write-tests`, `refactor-code`
-- ✗ Bad: `do-everything`
-
-### 2. Use Workflows for Reusability
-Extract common patterns into workflows:
-```markdown
-workflows/
-├── planning/
-│   ├── gather-requirements.md
-│   └── create-spec.md
-├── implementation/
-│   ├── write-code.md
-│   └── add-tests.md
-└── review/
-    └── code-review-checklist.md
-```
-
-### 3. Organize Standards by Category
-```markdown
-standards/
-├── language/
-│   ├── typescript.md
-│   └── python.md
-├── framework/
-│   ├── react.md
-│   └── django.md
-├── testing/
-│   └── unit-tests.md
-└── security/
-    └── auth.md
-```
-
-### 4. Version Your Profile
-```bash
-# Tag profile versions
-git tag -a profile-v1.0 -m "React dev profile v1.0"
-git push --tags
-```
-
-### 5. Test Your Profile
-Always test after changes:
-```bash
-# Test in a scratch project
-mkdir -p /tmp/test-profile
-cd /tmp/test-profile
-git init
-~/agent-os/scripts/project-install.sh \
-  --profile my-profile \
-  --preset claude-code-full \
-  --dry-run
-
-# Check the output
-cat .claude/commands/my-command.md
-```
-
-## Sharing Profiles
-
-### Option 1: Separate Repository
-```bash
-# Create profile repo
-git init my-profile
-cd my-profile
-# Copy profile structure
-cp -r ~/agent-os/profiles/my-profile/* .
-git add .
-git commit -m "Initial profile"
-git push
-
-# Others can install
-git clone https://github.com/you/my-profile
-mv my-profile ~/agent-os/profiles/
-```
-
-### Option 2: Fork agent-os
-1. Fork the agent-os repository
-2. Add your profile to `profiles/`
-3. Submit a pull request to share with community
-
-## Troubleshooting
-
-### Profile Not Found
-```bash
-# Check profile exists
-ls ~/agent-os/profiles/my-profile
-
-# Use full path if needed
-~/agent-os/scripts/project-install.sh \
-  --profile /full/path/to/my-profile
-```
-
-### Template Not Compiling
-```bash
-# Validate template syntax
-~/agent-os/scripts/validate-template.sh \
-  ~/agent-os/profiles/my-profile/commands/my-command.md
-
-# Check for common issues:
-# - Unclosed IF/ENDIF blocks
-# - Invalid workflow paths
-# - Syntax errors in frontmatter
-```
-
-### Standards Not Included
-```bash
-# Check standards exist
-ls ~/agent-os/profiles/my-profile/standards/
-
-# Verify glob patterns
-{{standards/coding/*.md}}     # Matches all .md in coding/
-{{standards/coding/style.md}} # Matches specific file
-```
-
-## Advanced Features
-
-### Conditional Content by Preset
-
-Use configuration flags in templates:
-
-```markdown
-IF{{use_claude_code_subagents}}
-## Using Subagents
-Delegate to specialized agents:
-- **planner** for architecture
-- **coder** for implementation
-- **tester** for validation
-ENDIF{{use_claude_code_subagents}}
-
-UNLESS{{use_claude_code_subagents}}
-## Single-Agent Mode
-Follow these steps yourself:
-1. Plan the architecture
-2. Implement the code
-3. Write tests
-ENDUNLESS{{use_claude_code_subagents}}
-```
-
-### Dynamic Workflows
-
-Create workflow templates that adapt:
-
-```markdown
-{{workflows/planning/create-spec}}
-
-IF{{standards_as_claude_code_skills}}
-Your coding standards are available as Claude Code Skills.
-Reference them during implementation.
-ENDIF{{standards_as_claude_code_skills}}
-
-UNLESS{{standards_as_claude_code_skills}}
-Follow these coding standards:
-{{standards/coding/*.md}}
-ENDUNLESS{{standards_as_claude_code_skills}}
-```
-
-## Related Documentation
-
-- [Template Syntax Reference](../profiles/default/TEMPLATE_SYNTAX.md)
-- [Systems Thinking Analysis](../ANALYSIS.md)
-- [Testing Guide](../tests/README.md)
-
-## Examples
-
-See example profiles in:
-- `profiles/default/` - The default agent-os profile
-- Community profiles: https://github.com/topics/agent-os-profile
+Remember: Custom profiles are powerful, but start simple and build up complexity as you need it!
