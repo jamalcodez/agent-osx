@@ -32,7 +32,12 @@ validate_installation() {
     validate_base_installation
 
     if [[ ! -d "$PROFILES_DIR" ]]; then
-        print_error "Profiles directory not found at $PROFILES_DIR"
+        echo ""
+        print_error_with_context \
+            "Profiles directory not found" \
+            "Expected location: $PROFILES_DIR" \
+            "Your base installation may be incomplete. Try running base-install.sh again."
+        echo ""
         exit 1
     fi
 }
