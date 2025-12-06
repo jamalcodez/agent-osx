@@ -22,7 +22,7 @@ The easiest way to start is by copying the default profile:
 cp -r profiles/default profiles/my-profile
 
 # 2. Use your custom profile
-./scripts/project-install.sh --profile my-profile --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --profile my-profile --preset claude-code-full
 ```
 
 ### Option 2: Create from Scratch
@@ -38,7 +38,7 @@ touch profiles/my-profile/standards/.keep
 touch profiles/my-profile/workflows/.keep
 
 # 3. Use your profile
-./scripts/project-install.sh --profile my-profile --preset claude-code-simple
+~/agent-osx/scripts/project-install.sh --profile my-profile --preset claude-code-simple
 ```
 
 ## Understanding Profile Structure
@@ -253,7 +253,7 @@ EOF
 ### Step 4: Use Your Profile
 
 ```bash
-./scripts/project-install.sh --profile react-dev --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --profile react-dev --preset claude-code-full
 ```
 
 Now you can use your custom command:
@@ -277,7 +277,7 @@ Always start by copying the default profile. It has all the basic structure you 
 ### 3. Test Incrementally
 After each change:
 ```bash
-./scripts/project-install.sh --profile my-profile --preset claude-code-basic --dry-run
+~/agent-osx/scripts/project-install.sh --profile my-profile --preset claude-code-basic --dry-run
 ```
 
 ### 4. Keep It Organized

@@ -11,6 +11,22 @@ Before you start, make sure you have:
 
 ## Step 1: Install Agent OS
 
+**Installation Method 1: Base Installation (One-time setup)**
+
+If you haven't installed Agent OS system-wide yet:
+```bash
+curl -sSL https://raw.githubusercontent.com/buildermethods/agent-os/main/scripts/base-install.sh | bash
+```
+
+**Installation Method 2: Using Cloned Repository (Local Development)**
+
+If you have cloned the repository locally (e.g., for development or testing):
+```bash
+git clone https://github.com/jamalcodez/agent-osx.git ~/agent-osx
+```
+
+When using a cloned repository, you can skip the base installation and use scripts directly from your clone.
+
 First, navigate to your project directory:
 
 ```bash
@@ -22,20 +38,31 @@ Then install Agent OS with the appropriate preset:
 ### For Claude Code Users
 
 ```bash
-# Recommended for most users
-./scripts/project-install.sh --preset claude-code-full
+# If you used base installation
+~/agent-os/scripts/project-install.sh --preset claude-code-full
+
+# If you cloned the repository locally
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 ```
 
 ### For Cursor/Windsurf Users
 
 ```bash
-./scripts/project-install.sh --preset cursor
+# If you used base installation
+~/agent-os/scripts/project-install.sh --preset cursor
+
+# If you cloned the repository locally
+~/agent-osx/scripts/project-install.sh --preset cursor
 ```
 
 ### For Beginners or Simple Projects
 
 ```bash
-./scripts/project-install.sh --preset claude-code-basic
+# If you used base installation
+~/agent-os/scripts/project-install.sh --preset claude-code-basic
+
+# If you cloned the repository locally
+~/agent-osx/scripts/project-install.sh --preset claude-code-basic
 ```
 
 **What just happened?**

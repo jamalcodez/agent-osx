@@ -32,7 +32,7 @@ The complete Agent OS experience with all Claude Code features enabled.
 
 **Example command:**
 ```bash
-./scripts/project-install.sh --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 ```
 
 ---
@@ -55,7 +55,7 @@ A streamlined setup focused on speed and simplicity.
 
 **Example command:**
 ```bash
-./scripts/project-install.sh --preset claude-code-simple
+~/agent-osx/scripts/project-install.sh --preset claude-code-simple
 ```
 
 ---
@@ -78,7 +78,7 @@ The simplest way to get started with Agent OS.
 
 **Example command:**
 ```bash
-./scripts/project-install.sh --preset claude-code-basic
+~/agent-osx/scripts/project-install.sh --preset claude-code-basic
 ```
 
 ---
@@ -101,7 +101,7 @@ Optimized for non-Claude AI coding tools.
 
 **Example command:**
 ```bash
-./scripts/project-install.sh --preset cursor
+~/agent-osx/scripts/project-install.sh --preset cursor
 ```
 
 ---
@@ -124,7 +124,7 @@ For users who work with multiple AI coding tools.
 
 **Example command:**
 ```bash
-./scripts/project-install.sh --preset multi-tool
+~/agent-osx/scripts/project-install.sh --preset multi-tool
 ```
 
 ---
@@ -172,13 +172,13 @@ When installing Agent OS in your project, specify the preset:
 
 ```bash
 # Install with claude-code-full preset
-./scripts/project-install.sh --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 
 # Install with cursor preset
-./scripts/project-install.sh --preset cursor
+~/agent-osx/scripts/project-install.sh --preset cursor
 
 # Install with custom profile
-./scripts/project-install.sh --preset claude-code-simple --profile my-profile
+~/agent-osx/scripts/project-install.sh --preset claude-code-simple --profile my-profile
 ```
 
 ### Changing Presets

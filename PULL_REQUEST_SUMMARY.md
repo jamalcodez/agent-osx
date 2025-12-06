@@ -244,14 +244,14 @@ claude-code-simple:
 **Usage**:
 ```bash
 # Before (complex)
-./scripts/project-install.sh \
+~/agent-osx/scripts/project-install.sh \
   --claude-code-commands true \
   --use-claude-code-subagents true \
   --agent-os-commands false \
   --standards-as-claude-code-skills true
 
 # After (simple)
-./scripts/project-install.sh --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 ```
 
 **Configuration Priority**:
@@ -307,10 +307,10 @@ show_diff_preview() {
 **Usage**:
 ```bash
 # Preview all changes without applying
-./scripts/project-install.sh --preset claude-code-full --dry-run
+~/agent-osx/scripts/project-install.sh --preset claude-code-full --dry-run
 
 # Review diffs, then run for real
-./scripts/project-install.sh --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 ```
 
 **Impact**:
@@ -374,10 +374,10 @@ Speedup: 30× faster
 **Usage**:
 ```bash
 # Use cache (default)
-./scripts/project-install.sh --preset claude-code-full
+~/agent-osx/scripts/project-install.sh --preset claude-code-full
 
 # Disable cache (force recompilation)
-./scripts/project-install.sh --preset claude-code-full --no-cache
+~/agent-osx/scripts/project-install.sh --preset claude-code-full --no-cache
 
 # Clear cache manually
 rm -rf ~/.cache/agent-os
