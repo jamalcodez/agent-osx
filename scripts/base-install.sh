@@ -5,8 +5,9 @@
 
 set -e
 
-# Repository configuration
+# Repository configuration (can be overridden by command line arguments)
 REPO_URL="https://github.com/buildermethods/agent-os"
+BRANCH="main"
 
 # Installation paths
 BASE_DIR="$HOME/agent-os"
@@ -34,7 +35,7 @@ bootstrap_error() {
 
 # Download common-functions.sh first
 download_common_functions() {
-    local functions_url="${REPO_URL}/raw/main/scripts/common-functions.sh"
+    local functions_url="${REPO_URL}/raw/${BRANCH}/scripts/common-functions.sh"
 
     if curl -sL --fail "$functions_url" -o "$COMMON_FUNCTIONS_TEMP"; then
         # Source the common functions
@@ -69,7 +70,7 @@ trap cleanup EXIT
 
 # Get latest version from GitHub
 get_latest_version() {
-    local config_url="${REPO_URL}/raw/main/config.yml"
+    local config_url="${REPO_URL}/raw/${BRANCH}/config.yml"
     curl -sL "$config_url" | grep "^version:" | sed 's/version: *//' | tr -d '\r\n'
 }
 
@@ -81,7 +82,7 @@ get_latest_version() {
 download_file() {
     local relative_path=$1
     local dest_path=$2
-    local file_url="${REPO_URL}/raw/main/${relative_path}"
+    local file_url="${REPO_URL}/raw/${BRANCH}/${relative_path}"
 
     mkdir -p "$(dirname "$dest_path")"
 
@@ -123,8 +124,8 @@ should_exclude() {
 
 # Get all files from GitHub repo using the tree API
 get_all_repo_files() {
-    # Get the default branch (usually main or master)
-    local branch="main"
+    # Use the global BRANCH variable
+    local branch="$BRANCH"
 
     # Extract owner and repo name from URL
     # From: https://github.com/owner/repo to owner/repo
@@ -599,6 +600,7 @@ perform_fresh_installation() {
     echo ""
     print_status "Configuration:"
     echo -e "  Repository: ${YELLOW}${REPO_URL}${NC}"
+    echo -e "  Branch: ${YELLOW}${BRANCH}${NC}"
     echo -e "  Target: ${YELLOW}~/agent-os${NC}"
     echo ""
 
@@ -675,9 +677,24 @@ main() {
                 echo "Usage: $0 [OPTIONS]"
                 echo ""
                 echo "Options:"
-                echo "  -v, --verbose    Show verbose output"
-                echo "  -h, --help       Show this help message"
+                echo "  -v, --verbose       Show verbose output"
+                echo "  -h, --help          Show this help message"
+                echo "  --repo REPO         Repository to install from (default: buildermethods/agent-os)"
+                echo "  --branch BRANCH     Branch to install from (default: main)"
+                echo ""
+                echo "Examples:"
+                echo "  $0                                    # Install from main branch of buildermethods/agent-os"
+                echo "  $0 --branch develop                  # Install from develop branch"
+                echo "  $0 --repo myuser/agent-os --branch feature-xyz  # Install from fork"
                 exit 0
+                ;;
+            --repo)
+                REPO_URL="https://github.com/$2"
+                shift 2
+                ;;
+            --branch)
+                BRANCH="$2"
+                shift 2
                 ;;
             *)
                 print_error "Unknown option: $1"

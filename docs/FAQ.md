@@ -2,6 +2,152 @@
 
 Find answers to common questions about Agent OS. Can't find what you're looking for? [Open an issue](https://github.com/builderio/agent-os/issues) on GitHub.
 
+## Installation
+
+### Q: Why doesn't Agent OS use `git clone` for installation?
+
+**A:** Agent OS uses a download-based installation approach for several important reasons:
+
+1. **No Git Required**: Many users don't have git installed or don't want to clone repositories just to use a tool
+2. **Clean Project Structure**: Downloading avoids creating .git directories in your projects
+3. **Reliable Versioning**: Installing from a specific tag/branch ensures consistent versions
+4. **Transactional Safety**: The installation can roll back on failure, which is harder with partial git clones
+5. **Performance**: The system uses intelligent caching to make subsequent installations 30× faster
+
+### Q: Can I still use git if I want to?
+
+**A:** Yes! While the default installation uses curl, you can:
+
+1. **Clone and install locally**:
+   ```bash
+   git clone https://github.com/buildermethods/agent-os.git
+   cd agent-os
+   ./scripts/base-install.sh
+   ```
+
+2. **Install from your fork**:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/YOUR_USERNAME/agent-os/main/scripts/base-install.sh | bash -s -- --repo YOUR_USERNAME/agent-os
+   ```
+
+3. **Work with branches**:
+   ```bash
+   ./scripts/base-install.sh --repo YOUR_USERNAME/agent-os --branch feature-xyz
+   ```
+
+### Q: How do the two-phase installations work?
+
+**A:** Agent OS uses a two-phase architecture:
+
+1. **Base Installation** (Phase 1): Installs the framework to `~/agent-os/`
+   - Downloads profiles, scripts, and templates
+   - Sets up global configuration
+   - Done once per system
+
+2. **Project Installation** (Phase 2): Installs into your project directory
+   - Compiles templates with project-specific context
+   - Creates `./agent-os/` directory with your standards
+   - Generates commands/agents for your AI coding tool
+
+This separation allows:
+- Fast project setup (cached templates)
+- Project customization without affecting global installation
+- Ability to commit generated files to your project's git
+
+### Q: What if I need to test changes on a development branch?
+
+**A:** You have several options:
+
+1. **Use branch parameters**:
+   ```bash
+   ./scripts/base-install.sh --repo YOUR_USERNAME/agent-os --branch your-branch-name
+   ```
+
+2. **Clone and install locally**:
+   ```bash
+   git clone -b your-branch https://github.com/YOUR_USERNAME/agent-os.git agent-os-dev
+   cd agent-os-dev
+   ./scripts/base-install.sh
+   ```
+
+3. **Use the development mode** (coming soon):
+   ```bash
+   ./scripts/dev-install.sh your-branch-name
+   ```
+
+### Q: Does the download approach work offline?
+
+**A:** Yes, Agent OS has a caching system:
+
+1. **First installation**: Downloads and caches files
+2. **Subsequent installations**: Uses cached files (30× faster)
+3. **Offline mode**: Can install from cache without internet
+
+### Q: How do I update Agent OS?
+
+**A:** Updates are simple:
+
+```bash
+# Update base installation
+~/agent-os/scripts/base-install.sh
+
+# Update project installation
+~/agent-os/scripts/project-update.sh
+```
+
+The update system will:
+- Check for newer versions
+- Show what will change
+- Allow selective updates (profiles, scripts, etc.)
+- Create backups before updating
+
+### Q: Can I customize the installation?
+
+**A:** Yes! Agent OS supports:
+
+1. **Custom profiles**: Create your own profiles in `~/agent-os/profiles/`
+2. **Custom standards**: Modify `~/agent-os/profiles/default/standards/`
+3. **Custom presets**: Edit `~/agent-os/config.yml`
+4. **Project-specific overrides**: Each project can customize its installation
+
+### Q: What gets installed in my project?
+
+**A:** The project installation creates:
+
+- `agent-os/standards/`: Your coding standards and conventions
+- `.claude/commands/`: Claude Code commands (if enabled)
+- `.claude/agents/`: Claude Code agents (if enabled)
+- `.claude/skills/`: Claude Code Skills (if enabled)
+
+All generated files are designed to be:
+- Human-readable and editable
+- Committed to your project's git repository
+- Customizable for your project's needs
+
+### Q: Is my data sent anywhere?
+
+**A:** No. Agent OS:
+
+1. Only downloads from GitHub during installation
+2. Does not send any of your code or data externally
+3. Runs entirely on your local machine
+4. Only uses the GitHub API to fetch file lists during installation
+
+### Q: How do I uninstall Agent OS?
+
+**A:** Removal is straightforward:
+
+```bash
+# Remove base installation
+rm -rf ~/agent-os
+
+# Remove from a specific project
+rm -rf project-folder/agent-os
+rm -rf project-folder/.claude/commands/agent-os
+```
+
+There are no system-wide changes or hidden files outside these directories.
+
 ## Getting Started
 
 ### What is Agent OS?
@@ -35,7 +181,7 @@ Agent OS works with any AI coding tool, including:
 cd /path/to/your-project
 
 # Install with a preset
-./scripts/project-install.sh --preset claude-code-full
+~/agent-os/scripts/project-install.sh --preset claude-code-full
 ```
 
 See the [Quick Start Guide](QUICK_START.md) for detailed instructions.
@@ -54,7 +200,7 @@ See the [Presets Guide](PRESETS.md) for detailed comparisons.
 
 Yes! Edit your `config.yml` file to change the preset, then run:
 ```bash
-./scripts/project-update.sh
+~/agent-os/scripts/project-update.sh
 ```
 
 ### Installation failed. What should I do?
@@ -63,11 +209,11 @@ Yes! Edit your `config.yml` file to change the preset, then run:
 2. Ensure you have write permissions
 3. Verify the scripts directory exists:
    ```bash
-   ls scripts/
+   ls ~/agent-os/scripts/
    ```
 4. Try with verbose output:
    ```bash
-   ./scripts/project-install.sh --preset claude-code-basic -v
+   ~/agent-os/scripts/project-install.sh --preset claude-code-basic -v
    ```
 
 ## Usage
@@ -96,14 +242,6 @@ For other tools, find commands in your `agent-os/commands/` directory and follow
 Yes! While Agent OS is optimized for feature development, you can use it for bug fixes by:
 1. Using `/shape-spec` to describe the bug and expected behavior
 2. Following the normal workflow to implement the fix
-
-### How do I update Agent OS?
-
-```bash
-# Update to the latest version
-git pull origin main
-./scripts/project-update.sh
-```
 
 ## Configuration
 
@@ -163,7 +301,7 @@ If it's still slow, check:
 
 Run the update script to refresh your installation:
 ```bash
-./scripts/project-update.sh
+~/agent-os/scripts/project-update.sh
 ```
 
 If errors persist, try a clean reinstall:
@@ -175,7 +313,7 @@ cp config.yml config.yml.backup
 rm -rf .claude/ agent-os/ profiles/
 
 # Reinstall
-./scripts/project-install.sh --preset [your-preset]
+~/agent-os/scripts/project-install.sh --preset [your-preset]
 ```
 
 ## Advanced

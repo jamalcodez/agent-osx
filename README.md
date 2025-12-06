@@ -20,22 +20,43 @@ Use it with:
 
 Get Agent OS running in your project in under 5 minutes:
 
-### 1. Choose Your Preset
+### 1. Installation
+
+```bash
+# Install Agent OS base framework (one-time)
+curl -sSL https://raw.githubusercontent.com/buildermethods/agent-os/main/scripts/base-install.sh | bash
+
+# Then install in your project
+cd your-project
+~/agent-os/scripts/project-install.sh --preset claude-code-full
+```
+
+### Installation from a Custom Branch or Fork
+
+```bash
+# Install from your fork's branch
+curl -sSL https://raw.githubusercontent.com/YOUR_USERNAME/agent-os/main/scripts/base-install.sh | bash -s -- --repo YOUR_USERNAME/agent-os --branch YOUR_BRANCH
+
+# Example:
+curl -sSL https://raw.githubusercontent.com/johndoe/agent-os/main/scripts/base-install.sh | bash -s -- --repo johndoe/agent-os --branch feature-new-ui
+```
+
+### 2. Choose Your Preset
 
 ```bash
 # For Claude Code users (recommended)
-./scripts/project-install.sh --preset claude-code-full
+~/agent-os/scripts/project-install.sh --preset claude-code-full
 
 # For Cursor/Windsurf users
-./scripts/project-install.sh --preset cursor
+~/agent-os/scripts/project-install.sh --preset cursor
 
 # For beginners or simple projects
-./scripts/project-install.sh --preset claude-code-basic
+~/agent-os/scripts/project-install.sh --preset claude-code-basic
 ```
 
 [📖 Need help choosing? See all presets →](docs/PRESETS.md)
 
-### 2. Create Your First Feature
+### 3. Create Your First Feature
 
 ```bash
 # Plan a new feature
@@ -51,6 +72,44 @@ Get Agent OS running in your project in under 5 minutes:
 That's it! Agent OS is now configured and ready to help you build better code, faster.
 
 **Performance boost:** Reinstallations are now 30× faster with caching (15s → 0.5s)
+
+## Why Agent OS Uses Download-Based Installation
+
+Agent OS uses a unique two-phase installation that provides:
+
+- ⚡ **30× faster** project setup through intelligent caching
+- 🛡️ **Transactional safety** with automatic rollback on failure
+- 🔄 **Git-friendly** project structures (no .git conflicts)
+- 🎯 **Zero dependencies** (doesn't require git to be installed)
+- 📦 **Reliable version control** (install specific versions reliably)
+
+### The Two-Phase Process
+
+1. **Base Installation** (`~/agent-os/`): Downloads the framework globally once
+2. **Project Installation** (`./agent-os/`): Compiles templates into your project
+
+This design allows for:
+- Fast project setup through cached templates
+- Project-specific customization without affecting the global installation
+- Clean separation between framework and project files
+- Ability to commit generated files to your project's git repository
+
+### For Developers Working on Agent OS
+
+If you're contributing to Agent OS or testing changes on a branch:
+
+```bash
+# Clone your branch locally
+git clone -b your-branch-name https://github.com/YOUR_USERNAME/agent-os.git agent-os-dev
+
+# Install from your local copy
+cd agent-os-dev
+./scripts/base-install.sh
+
+# Use it in a project
+cd ../your-project
+~/agent-os/scripts/project-install.sh
+```
 
 ## How It Works
 
